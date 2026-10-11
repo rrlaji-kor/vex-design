@@ -1,8 +1,8 @@
 /* 오프라인 캐시: 앱 화면과 도구 파일을 저장해 두고, 인터넷이 없을 때도 열리게 한다.
    Firebase·구글 로그인 요청은 건드리지 않는다. */
-const VERSION = '5968353de6';
+const VERSION = '17418b82fd';
 const CORE = 'core-' + VERSION;
-const FILES = ["./", "./index.html", "./config.js", "./seed.js", "./manifest.webmanifest", "./vendor/firebase-app-compat.js", "./vendor/firebase-auth-compat.js", "./vendor/firebase-firestore-compat.js", "./vendor/three.min.js", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png"];
+const FILES = ["./", "./index.html", "./config.js", "./seed.js", "./manifest.webmanifest", "./vendor/three.min.js", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png"];
 self.addEventListener('install', e => {
   // 브라우저 HTTP 캐시를 건너뛰고 새 파일을 받아 둔다
   e.waitUntil(caches.open(CORE).then(c => c.addAll(FILES.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));

@@ -326,6 +326,9 @@ button:disabled{cursor:not-allowed}
 .hrow .btn{grid-row:1/3;grid-column:3}
 .nick{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
 .nick input{border:1px solid var(--line-strong);border-radius:8px;padding:4px 8px;width:130px;background:var(--surface)}
+.paste{display:flex;gap:6px;align-items:center}
+.paste input,.linkbox{flex:1;min-width:0;width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
+.banner .btn{margin-left:4px}
 
 /* compare sheet */
 .sheet{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:grid;place-items:stretch;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
@@ -520,9 +523,6 @@ button:disabled{cursor:not-allowed}
 </div>
 
 <script src="vendor/three.min.js"></script>
-<script src="vendor/firebase-app-compat.js"></script>
-<script src="vendor/firebase-auth-compat.js"></script>
-<script src="vendor/firebase-firestore-compat.js"></script>
 <script src="config.js"></script>
 <script src="seed.js"></script>
 <script>
@@ -2072,7 +2072,7 @@ function onWriteError(e) {
 }
 function persistLocal() {
   if (S.mode !== 'local') return;
-  try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ designs: S.designs, history: S.history.slice(0, 150) })); } catch (e) {}
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ designs: S.designs, history: S.history.slice(0, 150), people: S.people })); } catch (e) {}
 }
 
 /* ---------- 바꾸기 (+기록) ----------
@@ -2154,6 +2154,21 @@ function createDesign(fromId) {
   recordHistory(id, Object.assign(clone(d), { deleted: true }), { label: fromId ? `구상안 복제 · ${d.name}` : `새 구상안 · ${d.name}`, kind: 'create' });
   persistLocal(); selectKey(null, 'silent'); refresh(); pushPresence();
   toast(`"${d.name}"을 만들었어요`);
+}
+/* 받은 구상안(링크)을 새 구상안으로 넣는다. src는 cleanDesign으로 거른 것 */
+function importDesign(src) {
+  if (S.readonly || S.mode === 'loading') return canEditNow();
+  const names = new Set(liveDesigns().map(x => x.name));
+  let name = src.name || '받은 구상안';
+  if (names.has(name)) { let n = 2; while (names.has(`${name} (${n})`)) n++; name = `${name} (${n})`; }
+  const now = Date.now();
+  const d = Object.assign(clone(src), { name, deleted: false, createdAt: now, createdBy: S.meId || null, updatedAt: now, updatedBy: S.meId || null });
+  const id = newId('d');
+  S.designs[id] = d; S.curId = id; S.prefs.lastDesign = id; savePrefs();
+  if (S.mode === 'shared') track(enqueue('designs/' + id, () => S.db.doc('designs/' + id).set(clone(d))));
+  recordHistory(id, Object.assign(clone(d), { deleted: true }), { label: `받은 구상안 추가 · ${name}`, kind: 'create' });
+  persistLocal(); selectKey(null, 'silent'); refresh(); pushPresence(); fitCam(true);
+  toast(`"${name}"을 추가했어요`);
 }
 function openDesign(id) {
   if (!S.designs[id] || S.designs[id].deleted) return;
@@ -2257,16 +2272,31 @@ function foreignToast(id, e) {
   const where = e.designId !== S.curId && d ? ` (${d.name})` : '';
   toast(`<b>${esc(whoName(e.by))}</b> · ${esc(e.label)}${esc(where)}`, true);
 }
+const SEEDED_KEY = 'vexiq-design-seeded-v1';
 function startLocal() {
   S.mode = 'local'; S.meId = 'local';
   try {
     const v = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null');
-    if (v && v.designs) { S.designs = v.designs; S.history = v.history || []; }
+    if (v && v.designs) { S.designs = v.designs; S.history = v.history || []; S.people = v.people || {}; }
   } catch (e) {}
+  // Claude 앱에서 만든 구상안·기록을 이 기기에 처음 한 번 넣는다 (이미 있는 건 그대로)
+  let seeded = false;
+  try { seeded = !!localStorage.getItem(SEEDED_KEY); } catch (e) {}
+  const seed = window.SEED;
+  if (!seeded && seed && seed.designs) {
+    for (const [id, d] of Object.entries(seed.designs)) if (!S.designs[id]) S.designs[id] = clone(d);
+    const have = new Set(S.history.map(e => e.id));
+    S.history = S.history.concat((seed.history || []).filter(e => e && e.id && !have.has(e.id)).map(clone)).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    S.people = Object.assign({}, seed.people || {}, S.people);
+    try { localStorage.setItem(SEEDED_KEY, String(Date.now())); } catch (e) {}
+    persistLocal();
+  }
   if (!liveDesigns().length) {
     const d = defaultDesign('구상안 1'); const id = newId('d');
     S.designs[id] = d;
   }
+  // 브라우저가 저장 공간을 함부로 비우지 않게 부탁해 둔다
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
   S.firstSnap = true; S.histReady = true;
   ensureCur(); setSync('local'); renderChrome(); refresh(); fitCam(true);
 }
@@ -2279,7 +2309,9 @@ function startLocal() {
 const BACKEND = {
   kind: 'firebase',
   text: {
-    local: 'Firebase 연결 전이라 바꾼 내용이 이 기기에만 남아요.',
+    // Firebase 없이 기기마다 따로 쓰는 게 기본이라 안내 띠를 띄우지 않는다
+    local: '',
+    syncLocal: '이 기기에 저장됨',
     ro: '이 구글 계정은 등록되지 않아서 저장할 수 없어요.',
     roToast: '이 구글 계정은 등록되지 않아서 저장할 수 없어요.',
     quota: '오늘 쓸 수 있는 무료 저장 횟수를 다 썼어요. 내일 다시 저장돼요.',
@@ -2547,7 +2579,7 @@ function setSync(s) {
   S.sync = s;
   if (!els.sync) return;
   els.sync.dataset.s = s;
-  els.sync.querySelector('span').textContent = { loading: '불러오는 중', saved: '저장됨', saving: '저장 중', error: '저장 안 됨', ro: '보기 전용', local: '이 기기에만 저장' }[s] || '';
+  els.sync.querySelector('span').textContent = { loading: '불러오는 중', saved: '저장됨', saving: '저장 중', error: '저장 안 됨', ro: '보기 전용', local: BACKEND.text.syncLocal || '이 기기에만 저장' }[s] || '';
 }
 function effView() {
   let v = S.prefs.view || (isWide() ? 'split' : '3d');
@@ -2577,7 +2609,12 @@ function renderChrome() {
   els.bigBtn.textContent = S.prefs.big ? '작게' : '크게';
   // 안내 띠
   let bn = '', k = '';
-  if (S.updateReady) { bn = '새 버전이 나왔어요. <button class="btn sm pri" type="button" data-act="reload">지금 적용</button>'; k = 'upd'; }
+  if (S.incoming) {
+    const nm = esc(S.incoming.name);
+    bn = S.incomingUrl ? `받은 구상안 "${nm}"이에요. 카톡 안에서는 앱에 저장되지 않아요. <button class="btn sm pri" type="button" data-act="openExternal">브라우저에서 열기</button>`
+      : `받은 구상안 "${nm}"을 내 구상안에 추가할까요? <button class="btn sm pri" type="button" data-act="acceptIncoming">추가</button> <button class="btn sm" type="button" data-act="dismissIncoming">닫기</button>`;
+    k = 'in';
+  } else if (S.updateReady) { bn = '새 버전이 나왔어요. <button class="btn sm pri" type="button" data-act="reload">지금 적용</button>'; k = 'upd'; }
   else if (S.mode === 'local') { bn = esc(BACKEND.text.local); k = 'local'; }
   else if (S.readonly) { bn = esc(BACKEND.text.ro); k = 'ro'; }
   else if (S.mode === 'shared' && S.firstSnap && !liveDesigns().length) { bn = '구상안이 아직 없어요. <button class="btn sm pri" type="button" data-act="newDesign">첫 구상안 만들기</button>'; k = 'empty'; }
@@ -2854,8 +2891,9 @@ function htmlDesigns() {
   const live = liveDesigns(), dead = Object.entries(S.designs).filter(([, d]) => d && d.deleted);
   const ro = S.readonly, cmp = S.ui.cmp.filter(id => S.designs[id] && !S.designs[id].deleted);
   S.ui.cmp = cmp;
+  const canShare = typeof shareDesign === 'function';
   let h = `<section class="sec"><div class="sec-h"><h3>구상안</h3><span class="aside">${live.length}개</span></div>
-    <p class="hint ex-only">여러 구도를 따로 저장해 두고, 2~3개를 골라 나란히 비교해요. 체크한 구상안이 비교에 들어가요.</p><div class="dlist">`;
+    <p class="hint ex-only">여러 구도를 따로 저장해 두고, 2~3개를 골라 나란히 비교해요. 체크한 구상안이 비교에 들어가요.${canShare ? ' <b>보내기</b>를 누르면 링크가 만들어져요. 카톡으로 보내면 받은 사람이 눌러서 자기 앱에 추가해요. 나에게 보내 두면 백업도 돼요.' : ''}</p><div class="dlist">`;
   for (const d of live) {
     const R = buildRobot(d), A = analyze(R), n = A.nDanger + A.nWarn;
     const cur = d.id === S.curId;
@@ -2870,7 +2908,8 @@ function htmlDesigns() {
       h += `<span class="confirm">"${esc(d.name)}"을 지울까요? 기록에서 되돌릴 수 있어요. <button class="btn sm dng" type="button" data-act="delYes" data-id="${d.id}">지우기</button><button class="btn sm" type="button" data-act="delNo">취소</button></span>`;
     } else {
       h += `<span class="acts">${cur ? '' : `<button class="btn sm" type="button" data-act="openDesign" data-id="${d.id}">열기</button>`}
-        ${ro ? '' : `<button class="btn sm" type="button" data-act="renameStart" data-id="${d.id}">이름 바꾸기</button><button class="btn sm" type="button" data-act="dupDesign" data-id="${d.id}">복제</button>${live.length > 1 ? `<button class="btn sm dng" type="button" data-act="delAsk" data-id="${d.id}">삭제</button>` : ''}`}</span>`;
+        ${canShare ? `<button class="btn sm" type="button" data-act="shareDesign" data-id="${d.id}">보내기</button>` : ''}
+        ${ro ? '' :`<button class="btn sm" type="button" data-act="renameStart" data-id="${d.id}">이름 바꾸기</button><button class="btn sm" type="button" data-act="dupDesign" data-id="${d.id}">복제</button>${live.length > 1 ? `<button class="btn sm dng" type="button" data-act="delAsk" data-id="${d.id}">삭제</button>` : ''}`}</span>`;
     }
     h += '</div>';
   }
@@ -2880,6 +2919,12 @@ function htmlDesigns() {
     ${ro || !curDesign() ? '' : '<button class="btn" type="button" data-act="dupDesign">지금 구상안 복제</button>'}
     <button class="btn" type="button" data-act="compare" ${cmp.length < 2 ? 'disabled' : ''}>나란히 비교 (${cmp.length})</button></div>
     ${cmp.length < 2 ? '<p class="hint" style="margin-top:8px">비교하려면 2~3개를 체크하세요.</p>' : ''}</section>`;
+  if (canShare && S.ui.shareUrl) h += `<section class="sec"><div class="sec-h"><h3>보낼 링크</h3></div>
+    <p class="hint">자동으로 복사하지 못했어요. 아래 칸을 길게 눌러 복사해서 보내세요.</p>
+    <input class="linkbox" type="text" readonly value="${esc(S.ui.shareUrl)}" onfocus="this.select()"></section>`;
+  if (canShare && !ro) h += `<section class="sec"><div class="sec-h"><h3>받은 구상안 넣기</h3></div>
+    <p class="hint ex-only">받은 링크를 눌러서 열면 바로 추가할 수 있어요. 카톡 안에서 열리거나 잘 안 되면 링크를 복사해서 여기에 붙여 넣으세요.</p>
+    <div class="paste"><input type="url" id="pasteIn" placeholder="받은 링크 붙여 넣기" autocomplete="off" aria-label="받은 구상안 링크"><button class="btn sm pri" type="button" data-act="pasteImport">추가</button></div></section>`;
   if (dead.length && !ro) h += `<section class="sec"><div class="sec-h"><h3>지운 구상안</h3></div><div class="dlist">${dead.map(([id, d]) =>
     `<div class="drow"><span></span><span class="nm">${esc(d.name)}</span><button class="btn sm" type="button" data-act="restoreDesign" data-id="${id}">되살리기</button></div>`).join('')}</div></section>`;
   return h;
@@ -2891,7 +2936,7 @@ function htmlHist() {
   const list = S.history.filter(e => all || e.designId === S.curId).slice(0, 120);
   const can = !S.readonly && d && undoTarget(S.curId);
   let h = `<section class="sec"><div class="sec-h"><h3>수정 기록</h3><span class="aside">${all ? '모든 구상안' : esc(d ? d.name : '')}</span></div>
-    <p class="hint ex-only">누가, 무엇을, 언제 바꿨는지 보여요. 지안이가 바꾼 것도 바로 여기에 떠요. 최근 300개까지 남아요.</p>
+    <p class="hint ex-only">${S.mode === 'local' ? '무엇을 언제 바꿨는지 보여요. 이 기기에서 바꾼 것만 남고, 최근 150개까지 보관해요.' : '누가, 무엇을, 언제 바꿨는지 보여요. 지안이가 바꾼 것도 바로 여기에 떠요. 최근 300개까지 남아요.'}</p>
     <div class="btnrow" style="margin-bottom:10px"><button class="btn" type="button" data-act="undo" ${can ? '' : 'disabled'}>↶ 마지막 변경 되돌리기</button>
     <span class="seg"><button type="button" class="${all ? '' : 'on'}" data-act="histAll" data-v="0">이 구상안</button><button type="button" class="${all ? 'on' : ''}" data-act="histAll" data-v="1">전체</button></span></div>`;
   if (!list.length) h += `<div class="empty">${S.mode === 'loading' ? '기록을 불러오는 중이에요.' : '아직 바뀐 게 없어요. 옵션을 고르거나 부품을 옮기면 여기에 남아요.'}</div>`;
@@ -3041,6 +3086,11 @@ function onPanelClick(e) {
     case 'logout': if (BACKEND.logout) BACKEND.logout(); break;
     case 'login': if (BACKEND.login) BACKEND.login(); break;
     case 'reload': location.reload(); break;
+    case 'shareDesign': shareDesign(b.dataset.id); break;
+    case 'pasteImport': pasteImport(); break;
+    case 'acceptIncoming': acceptIncoming(); break;
+    case 'dismissIncoming': dismissIncoming(); break;
+    case 'openExternal': openExternal(); break;
   }
 }
 function saveRename(id) {
@@ -3089,6 +3139,7 @@ function onPanelKey(e) {
   if (e.key === 'Enter' && e.target.id && e.target.id.startsWith('rn-')) { e.preventDefault(); saveRename(e.target.id.slice(3)); }
   if (e.key === 'Escape' && e.target.id && e.target.id.startsWith('rn-')) { S.ui.renaming = null; renderPanel(); }
   if (e.key === 'Enter' && e.target.id === 'nickIn') { e.preventDefault(); saveNick(); }
+  if (e.key === 'Enter' && e.target.id === 'pasteIn') { e.preventDefault(); pasteImport(); }
 }
 
 /* ---------- 나란히 비교 ---------- */
@@ -3146,6 +3197,127 @@ function toast(msg, html) {
   while (els.toasts.children.length > 3) els.toasts.firstChild.remove();
   setTimeout(() => t.remove(), 3400);
 }
+
+/* =========================================================
+   구상안 보내기 · 받기 (링크로, 계정·서버 없이)
+   링크 모양: <앱 주소>?d=<압축한 구상안>
+   ========================================================= */
+const SHARE_KEY = 'd';
+const b64u = {
+  enc(bytes) { let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+  dec(str) { const s = atob(str.replace(/-/g, '+').replace(/_/g, '/')); const a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; },
+};
+async function zipBytes(bytes, pack) {
+  const st = new Blob([bytes]).stream().pipeThrough(pack ? new CompressionStream('deflate-raw') : new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(st).arrayBuffer());
+}
+/* 받은 자료는 믿지 않는다: 아는 칸만, 정해진 범위 안의 값만 남긴다 */
+function cleanDesign(src) {
+  const num = (v, lo, hi, def) => (v != null && v !== '' && Number.isFinite(+v) ? clamp(+v, lo, hi) : def);
+  const str = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
+  const pick = (v, list) => (list.includes(v) ? v : null);
+  const ch = k => OPTS[k].choices.map(c => c.v);
+  const s = src && typeof src === 'object' ? src : {}, o = s.opts || {}, f = s.frame || {}, r = s.orient || {};
+  const d = {
+    name: str(s.name, 40) || '받은 구상안',
+    frame: { w: Math.round(num(f.w, 14, 24, 16)), l: Math.round(num(f.l, 19, 32, 20)) },
+    orient: { top: pick(r.top, ['A', 'B']), front: pick(r.front, ['end1', 'end2']) },
+    opts: {
+      launch: pick(o.launch, ch('launch')), dir: pick(o.dir, ch('dir')) || 'front', intake: pick(o.intake, ch('intake')),
+      brain: pick(o.brain, ch('brain')), bands: Math.round(num(o.bands, 1, 8, 4)), rail: Math.round(num(o.rail, 15, 85, 40)),
+      pull: pick(o.pull, ch('pull')) || 'winch',
+    },
+    mods: {}, edits: {}, added: {}, notes: str(s.notes, 2000),
+  };
+  for (const [k, m] of Object.entries(s.mods || {})) {
+    if (MODS[k] && m && typeof m === 'object') d.mods[k] = { dx: num(m.dx, -60, 60, 0), dy: num(m.dy, -60, 60, 0), dz: num(m.dz, -60, 60, 0) };
+  }
+  for (const [k, e] of Object.entries(s.edits || {})) {
+    if (!/^[\w:.-]{1,40}$/.test(k) || !e || typeof e !== 'object') continue;
+    const x = {};
+    for (const q of ['dx', 'dy', 'dz', 'dw', 'dl', 'dh']) if (e[q] != null) x[q] = num(e[q], -60, 60, 0);
+    if (e.hidden != null) x.hidden = !!e.hidden;
+    d.edits[k] = x;
+  }
+  const kinds = ADDABLE.map(a => a.kind);
+  for (const [k, a] of Object.entries(s.added || {})) {
+    if (!/^[\w-]{1,40}$/.test(k) || !a || !kinds.includes(a.kind) || !Array.isArray(a.c) || !Array.isArray(a.s)) continue;
+    d.added[k] = {
+      kind: a.kind, name: str(a.name, 40) || ADDABLE.find(x => x.kind === a.kind).label,
+      c: [0, 1, 2].map(i => num(a.c[i], -80, 80, 0)), s: [0, 1, 2].map(i => num(a.s[i], 0.5, 80, 1)),
+    };
+  }
+  return d;
+}
+async function packDesign(d) {
+  const raw = new TextEncoder().encode(JSON.stringify({ v: 1, d: cleanDesign(d) }));
+  if (window.CompressionStream) return 'z' + b64u.enc(await zipBytes(raw, true));
+  return 'j' + b64u.enc(raw);
+}
+async function unpackDesign(code) {
+  code = String(code || '').trim();
+  let raw = b64u.dec(code.slice(1));
+  if (code[0] === 'z') raw = await zipBytes(raw, false);
+  else if (code[0] !== 'j') throw new Error('bad code');
+  const o = JSON.parse(new TextDecoder().decode(raw));
+  if (!o || o.v !== 1 || !o.d || typeof o.d !== 'object') throw new Error('bad data');
+  return cleanDesign(o.d);
+}
+function shareCodeOf(text) {
+  text = String(text || '').trim();
+  if (/^[zj][\w-]{8,}$/.test(text)) return text;
+  try {
+    const u = new URL(text, location.href);
+    const h = u.hash.startsWith('#' + SHARE_KEY + '=') ? u.hash.slice(SHARE_KEY.length + 2) : null;
+    return u.searchParams.get(SHARE_KEY) || h;
+  } catch (e) { return null; }
+}
+const inKakao = () => /KAKAOTALK/i.test(navigator.userAgent);
+const coarsePointer = () => !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+
+/* ---------- 보내기 ---------- */
+async function shareDesign(id) {
+  const d = S.designs[id]; if (!d) return;
+  let url;
+  try { url = location.origin + location.pathname + '?' + SHARE_KEY + '=' + await packDesign(d); }
+  catch (e) { return toast('링크를 만들지 못했어요'); }
+  const title = `VEX 구상안 · ${d.name}`;
+  S.ui.shareUrl = null;
+  if (navigator.share && coarsePointer()) {
+    try { await navigator.share({ title, text: title, url }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); toast('링크를 복사했어요. 카톡에 붙여 넣어 보내세요'); }
+  catch (e) { S.ui.shareUrl = url; renderPanel(); }
+}
+
+/* ---------- 받기: 링크로 열었을 때 ---------- */
+async function checkIncoming() {
+  const href = location.href, code = shareCodeOf(href);
+  if (!code) return;
+  history.replaceState(null, '', location.pathname);
+  // 카톡 안 브라우저는 저장 공간이 앱과 따로라서 바깥 브라우저(설치한 앱)로 넘긴다
+  if (inKakao()) { S.incomingUrl = href; openExternal(); }
+  try { S.incoming = await unpackDesign(code); }
+  catch (e) { S.incoming = null; toast('받은 링크가 망가졌어요. 다시 보내 달라고 해 주세요'); }
+  renderChrome();
+}
+function openExternal() {
+  if (S.incomingUrl) location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(S.incomingUrl);
+}
+function acceptIncoming() {
+  const d = S.incoming; S.incoming = null; S.incomingUrl = null;
+  if (d) importDesign(d); else renderChrome();
+}
+function dismissIncoming() { S.incoming = null; S.incomingUrl = null; renderChrome(); }
+async function pasteImport() {
+  const i = document.getElementById('pasteIn'); if (!i) return;
+  const code = shareCodeOf(i.value);
+  if (!code) return toast('구상안 링크가 아니에요. 받은 링크를 통째로 붙여 넣어 주세요');
+  try { const d = await unpackDesign(code); i.value = ''; importDesign(d); }
+  catch (e) { toast('링크가 망가졌어요. 다시 보내 달라고 해 주세요'); }
+}
+window.addEventListener('hashchange', () => { if (S.mode !== 'loading') checkIncoming(); });
 
 /* =========================================================
    설치형 앱: 오프라인 캐시 등록 · 새 버전 알림 · "앱 설치" 버튼
@@ -3211,6 +3383,7 @@ function boot(hotData) {
     if (hot && typeof hot.snapshot === 'function') hot.snapshot(() => ({ curId: S.curId, tab: S.tab, cam: Object.assign({}, V3.cam, { tgt: V3.cam.tgt.slice() }) }));
   } catch (e) {}
   initBackend();
+  if (typeof checkIncoming === 'function') checkIncoming();
 }
 function bindUI() {
   els.pbody.addEventListener('click', onPanelClick);
