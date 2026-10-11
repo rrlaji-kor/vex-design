@@ -1,0 +1,8 @@
+/* 설치형 앱: 로그인 화면 */
+.gate{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;padding:24px 16px;padding-top:calc(24px + env(safe-area-inset-top,0px))}
+.gate-card{width:min(380px,100%);background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:28px 22px 22px;display:grid;gap:12px;justify-items:center;text-align:center}
+.gate-mark{width:52px;height:52px}
+.gate-card h2{margin:4px 0 0;font-size:20px;letter-spacing:-.02em}
+.gate-card p{margin:0;color:var(--muted);font-size:14px;max-width:32ch;text-wrap:balance}
+.gate-btn{width:100%;justify-content:center;padding:11px 14px;font-size:15px}
+.gate-note{font-size:12.5px!important;color:var(--faint)!important}

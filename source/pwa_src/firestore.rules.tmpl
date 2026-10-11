@@ -1,0 +1,17 @@
+rules_version = '2';
+// VEX IQ 로봇 설계 — 등록된 구글 계정만 읽고 쓸 수 있다.
+// 사람을 추가하려면 아래 목록에 이메일을 한 줄 더 넣고 "게시"를 누른다.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function member() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          __EMAILS__
+        ];
+    }
+    match /{document=**} {
+      allow read, write: if member();
+    }
+  }
+}
