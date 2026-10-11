@@ -1,0 +1,31 @@
+{
+  "name": "VEX IQ 로봇 설계",
+  "short_name": "VEX 설계",
+  "id": "./",
+  "lang": "ko",
+  "description": "VEX IQ Level Up 로봇 구도를 같이 잡는 설계 스케치북",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#e7ebef",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

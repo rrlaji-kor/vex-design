@@ -1,0 +1,3287 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>VEX IQ 로봇 설계</title>
+<meta name="description" content="VEX IQ Level Up 로봇 구도를 옵션으로 조합하고 2D 도면·3D로 확인하며 같이 고치는 앱">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#192028" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VEX 설계">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>:root{color-scheme:light;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
+:root{
+  /* Layout: drafting table — 2D drawing beside the 3D model, configurator rail on the right; on phones the model pins to the top and the rail scrolls under it */
+  --bg:#e7ebef; --paper:#f8fafc; --surface:#ffffff; --surface-2:#f0f3f6;
+  --ink:#16202b; --muted:#556070; --faint:#8590a0;
+  --line:#d3dae2; --line-strong:#b2bcc7;
+  --accent:#1b6dd0; --accent-soft:#e0ecfb; --accent-ink:#ffffff;
+  --c-launch:#dc6420; --c-intake:#1c8c60; --c-brain:#6d50e2; --c-custom:#4c6990;
+  --ok:#1b8253; --warn:#b06900; --danger:#c93232; --info:#3567ab;
+  --ok-soft:#ddf2e7; --warn-soft:#fbeed6; --danger-soft:#fbe3e3; --info-soft:#e2ebf8;
+  --p-beam:#c3c8ce; --p-edge:#7f8892; --p-conn:#fdfdfe; --p-motor:#d3d7dc; --p-cap:#686e76;
+  --p-wheel:#2a2e33; --p-shaft:#7a818a; --p-band:#bf8526; --p-bag:#e6b51a;
+  --grid:#e4e9ee; --grid-major:#cbd3dc;
+  --scene-bg:#e3e8ed; --scene-grid:#cbd3dc; --scene-grid-major:#a9b4c0;
+  --shadow:0 1px 2px rgba(20,30,45,.06),0 6px 18px rgba(20,30,45,.08);
+  --f-sans:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:10px; --r-sm:7px;
+  --vh-view:clamp(270px,46vh,470px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1318; --paper:#141a21; --surface:#192028; --surface-2:#202933;
+  --ink:#e2e8ee; --muted:#99a4b0; --faint:#6b7785;
+  --line:#27303a; --line-strong:#3a4552;
+  --accent:#5aa1ff; --accent-soft:#15304f; --accent-ink:#06101c;
+  --c-launch:#ff8c4b; --c-intake:#3cc18b; --c-brain:#9c88ff; --c-custom:#88a4c9;
+  --ok:#3bcd8c; --warn:#f0a53f; --danger:#ff6a6a; --info:#6fa8ff;
+  --ok-soft:#11331f; --warn-soft:#382811; --danger-soft:#3b1717; --info-soft:#142944;
+  --p-beam:#a4abb4; --p-edge:#d1d6dc; --p-conn:#e8ecf0; --p-motor:#b4bac2; --p-cap:#4b525a;
+  --p-wheel:#090b0d; --p-shaft:#9ba2aa; --p-band:#e0a54a; --p-bag:#f2c632;
+  --grid:#1b232c; --grid-major:#2a3440;
+  --scene-bg:#11171d; --scene-grid:#222b35; --scene-grid-major:#34404d;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.3);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1318; --paper:#141a21; --surface:#192028; --surface-2:#202933;
+  --ink:#e2e8ee; --muted:#99a4b0; --faint:#6b7785;
+  --line:#27303a; --line-strong:#3a4552;
+  --accent:#5aa1ff; --accent-soft:#15304f; --accent-ink:#06101c;
+  --c-launch:#ff8c4b; --c-intake:#3cc18b; --c-brain:#9c88ff; --c-custom:#88a4c9;
+  --ok:#3bcd8c; --warn:#f0a53f; --danger:#ff6a6a; --info:#6fa8ff;
+  --ok-soft:#11331f; --warn-soft:#382811; --danger-soft:#3b1717; --info-soft:#142944;
+  --p-beam:#a4abb4; --p-edge:#d1d6dc; --p-conn:#e8ecf0; --p-motor:#b4bac2; --p-cap:#4b525a;
+  --p-wheel:#090b0d; --p-shaft:#9ba2aa; --p-band:#e0a54a; --p-bag:#f2c632;
+  --grid:#1b232c; --grid-major:#2a3440;
+  --scene-bg:#11171d; --scene-grid:#222b35; --scene-grid-major:#34404d;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.3);
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;word-break:keep-all;overflow-wrap:break-word}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.app{display:flex;flex-direction:column;min-height:100%}
+
+/* ---------- header ---------- */
+.hd{background:var(--surface);border-bottom:1px solid var(--line);padding-inline:16px;position:relative;z-index:8}
+.hd-row{display:flex;align-items:center;gap:10px;min-height:50px}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand-mark{width:26px;height:26px;flex:none}
+.brand-name{font-weight:700;font-size:15px;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex:none}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--faint);display:inline-block}
+.sync[data-s="saved"] i{background:var(--ok)}
+.sync[data-s="saving"] i{background:var(--warn)}
+.sync[data-s="error"] i,.sync[data-s="ro"] i{background:var(--danger)}
+.sync[data-s="local"] i{background:var(--info)}
+.peers{display:flex;align-items:center}
+.peer{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:2px 8px 2px 2px;border:1px solid var(--line);border-radius:99px;background:var(--surface-2);margin-left:4px;max-width:150px}
+.peer img,.peer .av{width:20px;height:20px;border-radius:50%;flex:none}
+.peer .av{display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff}
+.peer .pn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.switch{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none;font-size:13px;font-weight:600}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch .sw{width:34px;height:20px;border-radius:99px;background:var(--line-strong);position:relative;transition:background .15s;flex:none}
+.switch .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.switch input:checked+.sw{background:var(--accent)}
+.switch input:checked+.sw::after{transform:translateX(14px)}
+.switch input:focus-visible+.sw{outline:2px solid var(--accent);outline-offset:2px}
+.apptabs{display:flex;align-items:center;gap:2px;overflow-x:auto;scrollbar-width:none;margin-inline:-4px}
+.apptabs::-webkit-scrollbar{display:none}
+.apptab{border:0;background:none;padding:6px 10px 9px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.apptab.on{color:var(--ink);border-bottom-color:var(--ink)}
+.apptab:disabled{color:var(--faint);cursor:default}
+.apptab small{font-size:10.5px;font-weight:600;letter-spacing:.02em;border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;color:var(--faint)}
+.design-pick{margin-left:auto;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface-2);border-radius:99px;padding:3px 10px;font-size:12.5px;font-weight:600;white-space:nowrap;max-width:46vw;margin-bottom:5px}
+.design-pick span{overflow:hidden;text-overflow:ellipsis}
+.banner{padding:8px 16px;font-size:13px;background:var(--info-soft);color:var(--ink);border-bottom:1px solid var(--line)}
+.banner[data-k="ro"]{background:var(--warn-soft)}
+
+/* ---------- work area ---------- */
+.work{flex:1;display:grid;grid-template-columns:minmax(0,1fr);min-height:0}
+.views{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;height:var(--vh-view);background:var(--bg);border-bottom:1px solid var(--line);display:grid;grid-template-rows:auto minmax(0,1fr);min-width:0}
+.app.big .views{--vh-view:74vh}
+.vbar{display:flex;align-items:center;gap:8px;padding:8px 12px 6px;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.vbar::-webkit-scrollbar{display:none}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:2px;flex:none}
+.seg button{border:0;background:none;padding:4px 10px;border-radius:6px;font-size:12.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tool{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 9px;font-size:12.5px;font-weight:600;color:var(--muted);white-space:nowrap;flex:none;display:inline-flex;align-items:center;gap:5px}
+.tool.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.vbar .grow{flex:1}
+.stage{position:relative;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);min-height:0;padding:0 12px 12px;gap:10px}
+.pane2d,.pane3d{position:relative;min-height:0;min-width:0;border-radius:var(--r);overflow:hidden;border:1px solid var(--line)}
+.pane2d{background:var(--paper);display:grid;grid-template-rows:minmax(0,1fr);gap:0}
+.pane3d{background:var(--scene-bg)}
+.views[data-v="3d"] .pane2d{display:none}
+.views[data-v="2d"] .pane3d{display:none}
+.sv{position:relative;min-height:0;overflow:hidden}
+.sv+.sv{border-top:1px solid var(--line)}
+.sv-cap{position:absolute;top:8px;left:10px;font-size:11.5px;font-weight:600;color:var(--muted);letter-spacing:.01em;pointer-events:none;background:var(--paper);padding:0 4px;border-radius:4px}
+.sv svg{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+.pane2d[data-only="top"] .sv[data-sv="side"],.pane2d[data-only="side"] .sv[data-sv="top"]{display:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;transform:translate(-50%,-100%);font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--surface);color:var(--ink);border:1px solid var(--line);white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.lbl[data-m="launcher"]{color:var(--c-launch);border-color:var(--c-launch)}
+.lbl[data-m="intake"]{color:var(--c-intake);border-color:var(--c-intake)}
+.lbl[data-m="brain"]{color:var(--c-brain);border-color:var(--c-brain)}
+.lbl.front{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.lbl.com{font-weight:600;font-size:11px}
+.cam{position:absolute;top:8px;right:8px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;max-width:70%}
+.cam button{border:1px solid var(--line);background:var(--surface);border-radius:6px;font-size:11.5px;font-weight:600;padding:3px 7px;color:var(--muted)}
+.nogl{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--muted);font-size:13px}
+.pick{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:start;max-width:520px}
+.pick h4{margin:0;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pick p{margin:0;font-size:12.5px;color:var(--muted);grid-column:1/-1;max-width:62ch}
+.pick .acts{display:flex;gap:6px;align-items:center}
+.x{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px;border-radius:6px}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.02em;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);background:var(--surface-2);white-space:nowrap}
+.chip.g-drive{color:var(--ink)}
+.chip.g-launcher{color:var(--c-launch);border-color:color-mix(in srgb,var(--c-launch) 45%,transparent)}
+.chip.g-intake{color:var(--c-intake);border-color:color-mix(in srgb,var(--c-intake) 45%,transparent)}
+.chip.g-brain{color:var(--c-brain);border-color:color-mix(in srgb,var(--c-brain) 45%,transparent)}
+.chip.g-custom{color:var(--c-custom)}
+.chip.ghost{border-style:dashed}
+.lv{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;white-space:nowrap}
+.lv-danger{background:var(--danger-soft);color:var(--danger)}
+.lv-warn{background:var(--warn-soft);color:var(--warn)}
+.lv-info{background:var(--info-soft);color:var(--info)}
+.lv-ok{background:var(--ok-soft);color:var(--ok)}
+
+/* ---------- panel ---------- */
+.panel{background:var(--surface);min-width:0}
+.ptabs{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--vh-view));z-index:5;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--surface);border-bottom:1px solid var(--line)}
+.app.big .ptabs{top:calc(env(safe-area-inset-top,0px) + 74vh)}
+.ptab{border:0;background:none;padding:11px 2px 9px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.ptab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.ptab .n{font-family:var(--f-mono);font-size:10.5px;font-weight:600;min-width:17px;height:17px;border-radius:99px;display:inline-grid;place-items:center;padding:0 4px;background:var(--danger);color:#fff}
+.ptab .n.w{background:var(--warn)}
+.pbody{padding:6px 16px 40px;padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+.sec{padding-block:14px;border-bottom:1px solid var(--line)}
+.sec:last-child{border-bottom:0}
+.sec-h{display:flex;align-items:baseline;gap:8px;margin:0 0 10px}
+.sec-h h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.sec-h .num{font-family:var(--f-mono);font-size:11.5px;font-weight:600;color:var(--faint)}
+.sec-h .aside{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+.hint{font-size:12.5px;color:var(--muted);margin:0 0 10px;max-width:64ch}
+.hint b{color:var(--ink);font-weight:600}
+.ex-only{}
+.app.noex .ex-only{display:none!important}
+
+/* option cards — 설명 켜짐: 한 줄 한 카드(아이콘 | 이름·설명·장단점), 꺼짐: 아이콘 타일 격자 */
+.cards{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.card{position:relative;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:10px 12px;display:grid;grid-template-columns:28px minmax(0,1fr);gap:3px 12px;align-items:start;min-width:0;transition:border-color .12s,background .12s}
+.card:hover{border-color:var(--line-strong)}
+.card.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.card svg.ic{width:28px;height:28px;color:var(--ink);grid-row:1/4;margin-top:1px}
+.card.on svg.ic{color:var(--accent)}
+.card .nm{font-weight:700;font-size:14px;line-height:1.35;min-width:0;grid-column:2}
+.card .ds{font-size:12.5px;color:var(--muted);line-height:1.45;grid-column:2}
+.card .pc{grid-column:2;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:3px;font-size:11.5px;line-height:1.45}
+.card .pc .col{display:grid;gap:2px;align-content:start}
+.card .pc .li{display:grid;grid-template-columns:11px minmax(0,1fr);gap:3px}
+.card .pc .li::before{font-family:var(--f-mono);font-weight:700}
+.card .pc .li.p::before{content:"+";color:var(--ok)}
+.card .pc .li.m::before{content:"−";color:var(--danger)}
+.app.noex .cards{grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:6px}
+.app.noex .card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:9px 6px}
+.app.noex .card .nm{font-size:12px;line-height:1.3}
+.app.noex .card svg.ic{width:24px;height:24px}
+#sec-orient .card{grid-template-columns:28px minmax(0,1fr)}
+.app.noex #sec-orient .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+.undec{margin-top:8px;border:1px dashed var(--line-strong);background:none;border-radius:99px;font-size:12px;font-weight:600;color:var(--muted);padding:3px 10px}
+.undec.on{border-style:solid;border-color:var(--ink);color:var(--ink)}
+.slider{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;margin-top:12px}
+.slider label{font-weight:600;font-size:13px}
+.slider output{font-family:var(--f-mono);font-weight:600;font-size:13px}
+.slider input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);height:28px}
+.slider .ds{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.slider.off{opacity:.45}
+.minirow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.minirow .lab{font-weight:600;font-size:13px;margin-right:4px}
+
+/* orientation step */
+.orient{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.oc{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:8px;text-align:left;display:grid;gap:6px;min-width:0}
+.oc.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.oc .ph{position:relative;border-radius:6px;overflow:hidden;background:var(--surface-2);aspect-ratio:240/280;max-width:100%}
+.oc .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.oc .ph .end{position:absolute;left:50%;transform:translateX(-50%);font-size:10.5px;font-weight:700;background:rgba(10,14,20,.78);color:#fff;padding:1px 6px;border-radius:4px;white-space:nowrap}
+.oc .ph .end.t{top:4px}
+.oc .ph .end.b{bottom:4px}
+.oc .nm{font-weight:700;font-size:13.5px}
+.oc .ds{font-size:12px;color:var(--muted);line-height:1.45}
+.oq{font-weight:600;font-size:13px;margin:12px 0 8px}
+.oq:first-of-type{margin-top:0}
+.stat{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+
+/* parts tab */
+.selbox{border:1px solid var(--line);border-radius:var(--r);padding:12px;background:var(--surface-2);display:grid;gap:10px}
+.selbox h4{margin:0;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap;text-wrap:balance}
+.selbox .role{font-size:12.5px;color:var(--muted);margin:0}
+.selbox .txt{font-size:13px;margin:0;max-width:64ch}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 12px;font-size:12.5px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-variant-numeric:tabular-nums}
+.mover{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center}
+.pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:4px}
+.pad button,.zbtn button,.step button,.sz button{border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;font-size:12px;font-weight:700;color:var(--ink);display:grid;place-items:center;line-height:1.1;padding:0}
+.pad button:active,.zbtn button:active,.sz button:active{background:var(--accent-soft)}
+.pad .c{border-style:dashed;color:var(--muted);font-size:10.5px;font-weight:600}
+.zcol{display:grid;gap:8px;justify-items:start}
+.zbtn{display:flex;gap:4px}
+.zbtn button{width:64px;height:40px}
+.step{display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted)}
+.step button{height:28px;padding:0 9px;font-size:12px}
+.step button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.sz{display:grid;grid-template-columns:auto 34px 60px 34px;gap:6px 6px;align-items:center;font-size:12.5px}
+.sz button{height:30px;font-size:16px}
+.sz output{text-align:center;font-family:var(--f-mono);font-size:12.5px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--ink)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.dng{color:var(--danger)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn:disabled{opacity:.45}
+.plist{display:grid;gap:4px}
+.pgrp{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.pgrp summary{list-style:none;cursor:pointer;padding:9px 12px;font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;background:var(--surface-2)}
+.pgrp summary::-webkit-details-marker{display:none}
+.pgrp summary .cnt{margin-left:auto;font-family:var(--f-mono);font-size:11.5px;color:var(--faint);font-weight:600}
+.pitem{display:flex;align-items:center;gap:8px;width:100%;border:0;border-top:1px solid var(--line);background:var(--surface);padding:7px 12px;text-align:left;font-size:13px}
+.pitem:hover{background:var(--surface-2)}
+.pitem.on{background:var(--accent-soft)}
+.pitem .dot{width:10px;height:10px;border-radius:3px;flex:none;border:1px solid var(--p-edge)}
+.pitem .m{margin-left:auto;font-size:11px;color:var(--warn);font-weight:700}
+.pitem.hid{color:var(--faint);text-decoration:line-through}
+.addgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.addgrid .btn{justify-content:center}
+.frame{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.frame .sz{grid-template-columns:auto 34px 46px 34px}
+
+/* warnings */
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.met{border:1px solid var(--line);border-radius:var(--r);padding:9px 10px;min-width:0}
+.met .k{font-size:11.5px;color:var(--muted);font-weight:600}
+.met .v{font-family:var(--f-mono);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.met .v small{font-size:11px;color:var(--faint);font-weight:500;font-family:var(--f-sans)}
+.met .bar{height:4px;border-radius:2px;background:var(--surface-2);margin-top:6px;overflow:hidden}
+.met .bar i{display:block;height:100%;background:var(--ok)}
+.met.bad .bar i{background:var(--danger)}
+.met.bad .v{color:var(--danger)}
+.wlist{display:grid;gap:8px}
+.w{border:1px solid var(--line);border-left-width:4px;border-radius:var(--r);padding:10px 12px;display:grid;gap:4px;background:var(--surface)}
+.w.danger{border-left-color:var(--danger)}
+.w.warn{border-left-color:var(--warn)}
+.w.info{border-left-color:var(--info)}
+.w h5{margin:0;font-size:13.5px;font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.w p{margin:0;font-size:12.5px;color:var(--muted);max-width:66ch}
+.w .btnrow{margin-top:4px}
+.empty{border:1px dashed var(--line-strong);border-radius:var(--r);padding:16px;text-align:center;color:var(--muted);font-size:13px}
+.rules{font-size:12.5px;color:var(--muted);display:grid;gap:3px;margin:0;padding-left:18px}
+.rules b{color:var(--ink);font-weight:600}
+.src{font-size:11.5px;color:var(--faint);margin-top:8px}
+.src a{color:inherit}
+
+/* designs */
+.dlist{display:grid;gap:8px}
+.drow{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center;background:var(--surface)}
+.drow.cur{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.drow input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.drow .nm{font-weight:700;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drow .meta{grid-column:2/-1;font-size:12px;color:var(--muted)}
+.drow .acts{grid-column:2/-1;display:flex;gap:6px;flex-wrap:wrap}
+.rename{display:flex;gap:6px;grid-column:2/-1}
+.rename input{flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:8px;padding:5px 9px;background:var(--surface)}
+.confirm{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--danger-soft);border-radius:8px;padding:8px 10px;font-size:12.5px}
+
+/* history */
+.hlist{display:grid;gap:0}
+.hrow{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:start}
+.hrow:last-child{border-bottom:0}
+.hrow img{width:26px;height:26px;border-radius:50%}
+.hrow .av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+.hrow .t{font-size:13.5px;line-height:1.4}
+.hrow .t b{font-weight:700}
+.hrow .m{font-size:11.5px;color:var(--faint);grid-column:2}
+.hrow.undone .t{color:var(--faint);text-decoration:line-through}
+.hrow .btn{grid-row:1/3;grid-column:3}
+.nick{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.nick input{border:1px solid var(--line-strong);border-radius:8px;padding:4px 8px;width:130px;background:var(--surface)}
+
+/* compare sheet */
+.sheet{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:grid;place-items:stretch;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.sheet-in{background:var(--surface);display:flex;flex-direction:column;min-height:0;max-height:100%;overflow:hidden}
+@media (min-width:760px){.sheet{place-items:center;padding:24px}.sheet-in{width:min(1100px,100%);max-height:92vh;border-radius:14px;border:1px solid var(--line);box-shadow:var(--shadow)}}
+.sheet-hd{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.sheet-hd h3{margin:0;font-size:16px}
+.sheet-bd{overflow:auto;padding:12px 16px 24px}
+.cmp{display:grid;gap:10px;min-width:0}
+.cmp-cols{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);gap:10px}
+.cmp-col{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-width:0}
+.cmp-col .img{background:var(--scene-bg);aspect-ratio:4/3;display:grid;place-items:center;max-width:100%}
+.cmp-col .img img{width:100%;height:100%;object-fit:cover;display:block}
+.cmp-col h4{margin:0;padding:8px 10px;font-size:14px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-tab{overflow-x:auto}
+.cmp-tab table{border-collapse:collapse;width:100%;font-size:12.5px}
+.cmp-tab th,.cmp-tab td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.cmp-tab th{color:var(--muted);font-weight:600;white-space:nowrap;width:1%}
+.cmp-tab tr.diff td{background:var(--accent-soft)}
+.cmp-tab td.mono{font-variant-numeric:tabular-nums}
+
+/* toasts */
+.toasts{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;display:grid;gap:6px;justify-items:center;pointer-events:none;width:min(92vw,440px)}
+.toast{background:var(--ink);color:var(--surface);font-size:13px;padding:8px 14px;border-radius:9px;box-shadow:var(--shadow);max-width:100%;animation:tin .18s ease-out}
+.toast b{font-weight:700}
+@keyframes tin{from{transform:translateY(6px);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.toast{animation:none}.switch .sw,.switch .sw::after{transition:none}}
+
+/* ---------- 2D drawing ---------- */
+.pane2d[data-only=""]{grid-template-rows:minmax(0,1.25fr) minmax(0,1fr)}
+.d2 .gminor{stroke:var(--grid);stroke-width:.05;fill:none}
+.d2 .gmajor{stroke:var(--grid-major);stroke-width:.08;fill:none}
+.d2 .com .q{fill:var(--ink)}
+.d2 .mtxt,.d2 .com,.d2 .gtxt,.d2 .ftxt,.d2 .arrow,.d2 .sup,.d2 .lim,.d2 .floor{pointer-events:none}
+.d2 .xr{fill-opacity:.82}
+.d2 .pt{vector-effect:non-scaling-stroke;stroke-width:1;cursor:pointer}
+.d2 .k-wall,.d2 .k-beam,.d2 .k-plate{fill:var(--p-beam);stroke:var(--p-edge)}
+.d2 .k-conn{fill:var(--p-conn);stroke:var(--p-edge)}
+.d2 .k-motor{fill:var(--p-motor);stroke:var(--p-edge)}
+.d2 .k-wheel{fill:var(--p-wheel);stroke:var(--p-edge)}
+.d2 .k-shaft,.d2 .k-collar{fill:var(--p-shaft);stroke:var(--p-edge)}
+.d2 .k-band{stroke:var(--p-band);fill:none;stroke-width:1.4}
+.d2 .k-bag{fill:var(--p-bag);stroke:var(--p-edge);opacity:.85}
+.d2 .k-string{stroke:var(--ink);fill:none;stroke-dasharray:2 2}
+.d2 .m-launcher{fill:color-mix(in srgb,var(--c-launch) 26%,transparent);stroke:var(--c-launch);stroke-dasharray:4 2}
+.d2 .m-intake{fill:color-mix(in srgb,var(--c-intake) 26%,transparent);stroke:var(--c-intake);stroke-dasharray:4 2}
+.d2 .m-brain{fill:color-mix(in srgb,var(--c-brain) 26%,transparent);stroke:var(--c-brain);stroke-dasharray:4 2}
+.d2 .m-custom{fill:color-mix(in srgb,var(--c-custom) 30%,transparent);stroke:var(--c-custom)}
+.d2 .ph-box{stroke-dasharray:6 3;stroke-width:1.4}
+.d2 .ghost{fill:none;stroke-dasharray:2 3;opacity:.7;pointer-events:none}
+.d2 .pt.sel{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:none}
+.d2 .pt.bad{stroke:var(--danger);stroke-width:2.2;stroke-dasharray:none}
+.d2 .pt.peer{stroke-width:2.4;stroke-dasharray:3 2}
+.d2 .floor{stroke:var(--ink);stroke-width:1.4;vector-effect:non-scaling-stroke}
+.d2 .lim{stroke:var(--danger);stroke-width:1;stroke-dasharray:6 4;fill:none;vector-effect:non-scaling-stroke;opacity:.8}
+.d2 .sup{stroke:var(--ink);stroke-width:1;stroke-dasharray:3 3;fill:none;vector-effect:non-scaling-stroke;opacity:.5}
+.d2 .com circle{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;vector-effect:non-scaling-stroke}
+.d2 .com path{stroke:var(--ink);stroke-width:1.4;vector-effect:non-scaling-stroke}
+.d2 .gtxt{fill:var(--muted);font-family:var(--f-sans);font-weight:600}
+.d2 .ftxt{fill:var(--ink);font-family:var(--f-sans);font-weight:700}
+.d2 .mtxt{font-family:var(--f-sans);font-weight:700;paint-order:stroke;stroke:var(--paper);stroke-width:.32;stroke-linejoin:round}
+.d2 .mtxt.launcher{fill:var(--c-launch)}
+.d2 .mtxt.intake{fill:var(--c-intake)}
+.d2 .mtxt.brain{fill:var(--c-brain)}
+.d2 .arrow{fill:var(--ink)}
+
+/* ---------- wider screens ---------- */
+@media (min-width:760px){
+  body{overflow:hidden}
+  .app{height:100%}
+  .work{grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:minmax(0,1fr);min-height:0;overflow:hidden}
+  .views{position:relative;top:auto;height:auto;min-height:0;overflow:hidden;border-bottom:0;border-right:1px solid var(--line)}
+  .app.big .views{--vh-view:auto}
+  .panel{overflow-y:auto;overscroll-behavior:contain}
+  .ptabs{top:0}
+  .app.big .ptabs{top:0}
+  .bigbtn{display:none!important}
+  .pick{left:16px;right:auto;width:min(440px,calc(100% - 32px))}
+}
+@media (min-width:1100px){
+  .work{grid-template-columns:minmax(0,1fr) 390px}
+  .views[data-v="split"] .stage{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr)}
+  .views[data-v="split"] .pane2d{grid-template-rows:minmax(0,1.25fr) minmax(0,1fr)}
+  .views[data-v="split"] .pick{left:auto;right:24px}
+}
+@media (max-width:1099.98px){
+  .views[data-v="split"] .pane2d{display:none}
+}
+@media (max-width:420px){
+  .brand-name{font-size:14px}
+  .sync span{display:none}
+  .cards{gap:6px}
+  .card{padding:9px}
+}
+
+/* 설치형 앱: 로그인 화면 */
+.gate{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;padding:24px 16px;padding-top:calc(24px + env(safe-area-inset-top,0px))}
+.gate-card{width:min(380px,100%);background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:28px 22px 22px;display:grid;gap:12px;justify-items:center;text-align:center}
+.gate-mark{width:52px;height:52px}
+.gate-card h2{margin:4px 0 0;font-size:20px;letter-spacing:-.02em}
+.gate-card p{margin:0;color:var(--muted);font-size:14px;max-width:32ch;text-wrap:balance}
+.gate-btn{width:100%;justify-content:center;padding:11px 14px;font-size:15px}
+.gate-note{font-size:12.5px!important;color:var(--faint)!important}
+</style>
+</head>
+<body>
+<div id="app" class="app">
+  <header class="hd">
+    <div class="hd-row">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="5" fill="var(--ink)"/><g fill="var(--accent)"><circle cx="8" cy="8" r="2.6"/><circle cx="18" cy="8" r="2.6"/><circle cx="8" cy="18" r="2.6"/><circle cx="18" cy="18" r="2.6"/></g><path d="M8 8h10v10H8z" fill="none" stroke="var(--surface)" stroke-width="1.3" opacity=".55"/></svg>
+        <span class="brand-name">VEX IQ 로봇 설계</span>
+      </div>
+      <div class="hd-right">
+        <button class="tool" type="button" id="installBtn" hidden>앱 설치</button>
+        <div class="peers" id="peers" aria-live="polite"></div>
+        <span class="sync" id="sync" data-s="loading"><i></i><span>불러오는 중</span></span>
+        <label class="switch" title="부품·옵션 설명 보이기">
+          <input type="checkbox" id="explainToggle" checked>
+          <span class="sw" aria-hidden="true"></span><span>설명</span>
+        </label>
+      </div>
+    </div>
+    <nav class="apptabs" aria-label="앱 탭">
+      <button class="apptab on" type="button" aria-current="page">설계</button>
+      <button class="apptab" type="button" disabled title="2차 버전에서 추가돼요">시뮬레이션<small>2차</small></button>
+      <button class="apptab" type="button" disabled title="3차 버전에서 추가돼요">진단<small>3차</small></button>
+      <button class="design-pick" id="designPick" type="button" title="구상안 바꾸기"><span id="designPickName">구상안</span><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    </nav>
+  </header>
+  <div class="banner" id="banner" hidden></div>
+  <main class="work" id="work">
+    <section class="views" id="views" data-v="3d" aria-label="로봇 보기">
+      <div class="vbar">
+        <div class="seg" id="viewSeg" role="group" aria-label="보기 방식"></div>
+        <div class="seg" id="sideSeg" role="group" aria-label="2D 방향" hidden>
+          <button type="button" data-sv="top" class="on">위에서</button>
+          <button type="button" data-sv="side">옆에서</button>
+        </div>
+        <span class="grow"></span>
+        <button class="tool" type="button" id="startBoxBtn" title="시작 크기 11×20×15in 상자 보기">시작 크기</button>
+        <button class="tool bigbtn" type="button" id="bigBtn" title="보기 영역 크게">크게</button>
+      </div>
+      <div class="stage">
+        <div class="pane2d" id="pane2d" data-only="top">
+          <div class="sv" data-sv="top"><span class="sv-cap" id="capTop">위에서 본 모습</span><svg id="svgTop" class="d2" role="img" aria-label="위에서 본 로봇 도면"></svg></div>
+          <div class="sv" data-sv="side"><span class="sv-cap">옆(오른쪽)에서 본 모습</span><svg id="svgSide" class="d2" role="img" aria-label="옆에서 본 로봇 도면"></svg></div>
+        </div>
+        <div class="pane3d" id="pane3d">
+          <canvas id="cv" aria-label="3D 로봇 모델"></canvas>
+          <div class="labels" id="labels"></div>
+          <div class="cam" id="camBtns">
+            <button type="button" data-cam="iso">비스듬히</button>
+            <button type="button" data-cam="front">앞</button>
+            <button type="button" data-cam="side">옆</button>
+            <button type="button" data-cam="top">위</button>
+            <button type="button" data-cam="bottom">밑</button>
+          </div>
+        </div>
+      </div>
+      <div class="pick" id="pick" hidden></div>
+    </section>
+    <aside class="panel" id="panel" aria-label="설계 패널">
+      <div class="ptabs" role="tablist" id="ptabs">
+        <button class="ptab on" role="tab" type="button" data-tab="combo">조합</button>
+        <button class="ptab" role="tab" type="button" data-tab="parts">부품</button>
+        <button class="ptab" role="tab" type="button" data-tab="warn">경고</button>
+        <button class="ptab" role="tab" type="button" data-tab="designs">구상안</button>
+        <button class="ptab" role="tab" type="button" data-tab="hist">기록</button>
+      </div>
+      <div class="pbody" id="pbody"></div>
+    </aside>
+  </main>
+  <div class="sheet" id="sheet" hidden>
+    <div class="sheet-in" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <div class="sheet-hd"><h3 id="sheetTitle">구상안 나란히 비교</h3><span class="grow" style="flex:1"></span><button class="x" type="button" id="sheetClose" aria-label="닫기">×</button></div>
+      <div class="sheet-bd" id="sheetBody"></div>
+    </div>
+  </div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+</div>
+
+<div class="gate" id="gate" hidden>
+  <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <svg class="gate-mark" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="5" fill="var(--ink)"/><g fill="var(--accent)"><circle cx="8" cy="8" r="2.6"/><circle cx="18" cy="8" r="2.6"/><circle cx="8" cy="18" r="2.6"/><circle cx="18" cy="18" r="2.6"/></g><path d="M8 8h10v10H8z" fill="none" stroke="var(--surface)" stroke-width="1.3" opacity=".55"/></svg>
+    <h2 id="gateTitle">VEX IQ 로봇 설계</h2>
+    <p id="gateMsg">지안이와 같이 쓰는 로봇 설계 앱이에요. 구글 계정으로 로그인해 주세요.</p>
+    <button class="btn pri gate-btn" type="button" id="gateLogin">구글 계정으로 로그인</button>
+    <button class="btn gate-btn" type="button" id="gateOut" hidden>다른 계정으로 로그인</button>
+    <p class="gate-note">등록된 계정만 들어올 수 있어요.</p>
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-auth-compat.js"></script>
+<script src="vendor/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="seed.js"></script>
+<script>
+const FACE_PHOTOS = null;
+'use strict';
+/* =========================================================
+   VEX IQ 로봇 설계 — 데이터(옵션·부품 설명·규칙)
+   단위: 1칸 = VEX IQ 구멍 간격 12.7mm = 0.5in
+   ========================================================= */
+const MM_PER = 12.7;
+const IN_PER = 0.5;
+const LIM = { w: 22, l: 40, h: 30, expL: 48 };   // 칸 (11in × 20in × 15in, 확장 24in)
+const ZTOP = 3.5;                                 // 프레임 윗면 높이(칸)
+const AXLE_Z = 2.5;                               // 바퀴 축 높이(칸)
+
+const MODS = {
+  launcher: { label: '발사부', cls: 'launcher' },
+  intake:   { label: '인테이커', cls: 'intake' },
+  brain:    { label: '브레인', cls: 'brain' },
+};
+const GROUP_LABEL = { drive: '드라이빙보드', launcher: '발사부', intake: '인테이커', brain: '브레인', custom: '추가한 부품' };
+
+/* ---------- 옵션 ---------- */
+const OPTS = {
+  launch: {
+    title: '발사 방식', step: '02',
+    choices: [
+      { v: 'sling_back', name: '새총 · 뒤로 당김', short: '새총(뒤로 당김)',
+        desc: '포켓을 레일을 따라 뒤로 당겼다가 놓으면 고무줄 힘으로 튀어 나가요. 레일 각도가 곧 발사 각도예요.',
+        pros: ['각도를 정해 두면 매번 비슷하게 날아가요', '레일 각도로 거리를 맞추기 쉬워요'],
+        cons: ['레일이 길어서 위쪽 공간을 많이 써요', '당기는 장치가 큰 힘을 내야 해요'] },
+      { v: 'sling_down', name: '새총 · 아래로 당김', short: '새총(아래로 당김)',
+        desc: '높은 틀에 건 고무줄을 아래로 끌어 내렸다가 놓아서 위쪽으로 쏴요.',
+        pros: ['가파르게 올라가서 높은 골에 떨어뜨리기 좋아요', '로봇 길이를 적게 차지해요'],
+        cons: ['틀이 높아져서 시작 높이 15in를 넘지 않게 주의', '무게중심이 높아져요'] },
+      { v: 'catapult', name: '투석기 팔', short: '투석기 팔',
+        desc: '고무줄로 당긴 팔이 휘둘러 올라가다가 멈춤대에 부딪혀 멈추면 빈백이 날아가요.',
+        pros: ['구조가 단순하고 빨리 다시 쏠 수 있어요', '슬립기어로 당기면 걸쇠가 필요 없어요'],
+        cons: ['새총보다 거리·각도를 맞추기 어려워요', '멈출 때 충격이 커서 부품이 헐거워지기 쉬워요'] },
+      { v: 'lift', name: '들어 올려 넣기', short: '들어 올려 넣기',
+        desc: '쏘지 않고 빈백을 들어 올려서 골에 직접 내려놓아요.',
+        pros: ['가장 정확해요', '빈백이 경기장 밖으로 날아갈 일이 없어요'],
+        cons: ['골 바로 앞까지 가야 해서 느려요', '높은 골에 닿으려면 리프트가 길어야 해요'] },
+    ]
+  },
+  dir: {
+    title: '발사 방향', step: '03',
+    choices: [
+      { v: 'front', name: '앞', short: '앞',
+        desc: '인테이커가 있는 앞쪽으로 쏴요.',
+        pros: ['줍고 바로 쏘니 운전이 쉬워요'],
+        cons: ['빈백이 인테이커 위를 넘어가야 해요'] },
+      { v: 'back', name: '뒤', short: '뒤',
+        desc: '인테이커 반대쪽인 뒤쪽으로 쏴요.',
+        pros: ['포켓이 인테이커 가까이 와서 빈백 옮기기가 쉬워요'],
+        cons: ['쏠 때마다 로봇을 돌려야 해서 운전이 헷갈릴 수 있어요'] },
+    ]
+  },
+  intake: {
+    title: '인테이커', step: '04',
+    choices: [
+      { v: 'roller', name: '롤러', short: '롤러',
+        desc: '앞에서 돌아가는 롤러가 바닥의 빈백을 빨아들여요.',
+        pros: ['빠르고, 대충 맞춰도 들어와요', '말랑한 빈백에 잘 맞아요'],
+        cons: ['모터가 하나 더 필요해요', '두 개를 한꺼번에 빨아들이면 규칙 위반'] },
+      { v: 'claw', name: '집게', short: '집게',
+        desc: '손가락 두 개로 빈백을 집어요.',
+        pros: ['딱 1개만 잡아서 규칙에 안전해요', '들어 올려 넣기와 잘 맞아요'],
+        cons: ['느리고, 위치를 정확히 맞춰야 해요'] },
+      { v: 'conveyor', name: '컨베이어', short: '컨베이어',
+        desc: '비스듬한 벨트가 빈백을 바닥에서 위로 실어 날라요.',
+        pros: ['바닥에서 발사부까지 한 번에 올려 줘요'],
+        cons: ['부품이 많고 무거워요', '벨트 위에 빈백이 2개 이상 있으면 규칙 위반'] },
+    ]
+  },
+  brain: {
+    title: '브레인 위치', step: '05',
+    choices: [
+      { v: 'side', name: '옆면', short: '옆면',
+        desc: '로봇 오른쪽 옆면에 세워서 달아요.',
+        pros: ['화면과 포트가 잘 보여요', '위쪽 공간을 발사부에 양보해요'],
+        cons: ['무게가 한쪽으로 쏠려요', '옆에서 부딪히면 다칠 수 있어요'] },
+      { v: 'back', name: '뒤쪽', short: '뒤쪽',
+        desc: '로봇 뒤 끝에 세워서 달아요.',
+        pros: ['앞쪽 인테이커 무게와 균형이 맞아요', '선 정리가 쉬워요'],
+        cons: ['로봇이 길어져요', '뒤로 쏘면 발사 길을 막을 수 있어요'] },
+      { v: 'top', name: '위쪽', short: '위쪽',
+        desc: '로봇 위에 눕혀서 달아요.',
+        pros: ['가운데라 균형이 좋고 화면이 잘 보여요'],
+        cons: ['발사부와 자리를 다퉈요', '무게중심이 높아져요'] },
+    ]
+  },
+  pull: {
+    title: '당기는 장치',
+    choices: [
+      { v: 'winch', name: '윈치', short: '윈치',
+        desc: '모터가 줄을 감아서 포켓을 당겨요.',
+        pros: ['당기는 길이를 자유롭게 정해요', '부품이 적어요'],
+        cons: ['줄이 엉킬 수 있어요', '놓아 줄 걸쇠가 필요해요'] },
+      { v: 'rack', name: '랙기어', short: '랙기어',
+        desc: '톱니가 일자로 붙은 막대(랙)를 모터 기어가 밀고 당겨요.',
+        pros: ['튼튼하고 위치를 정확히 맞춰요'],
+        cons: ['랙 길이만큼 공간이 필요해요', '걸쇠가 필요해요'] },
+      { v: 'slip', name: '슬립기어', short: '슬립기어',
+        desc: '이빨 일부를 깎아 낸 기어예요. 돌다가 이빨 없는 곳에서 저절로 놓아줘요.',
+        pros: ['걸쇠가 필요 없어요', '계속 돌리기만 하면 연속 발사'],
+        cons: ['고무줄이 세면 이빨이 미끄러질 수 있어요', '당기는 거리가 기어 크기로 정해져요'] },
+    ]
+  },
+};
+const SLIDERS = {
+  bands: { label: '고무줄 개수', min: 1, max: 8, step: 1, unit: '개',
+    desc: '많을수록 세게(멀리) 날아가요. 대신 당기는 장치와 틀이 더 큰 힘을 버텨야 해요. 실제 거리는 2차 시뮬레이션에서 확인해요.' },
+  rail: { label: '레일 각도', min: 15, max: 85, step: 1, unit: '°',
+    desc: '레일이 바닥과 이루는 각도가 곧 발사 각도예요. 45° 근처가 가장 멀리 가고, 더 세우면 높이 올라가요.' },
+  railCat: { label: '발사 각도(멈춤대)', desc: '멈춤대 위치가 발사 각도를 정해요. 팔이 멈추는 순간 빈백이 팔과 직각 방향으로 날아가요.' },
+};
+const SLING = v => v === 'sling_back' || v === 'sling_down';
+const optName = (k, v) => { if (v == null) return '미정'; const c = OPTS[k].choices.find(c => c.v === v); return c ? c.short : String(v); };
+
+/* ---------- 부품 설명 ---------- */
+const KIND = {
+  omni:      { name: '옴니휠', role: '바퀴', vis: 'wheel',
+    text: '바퀴 둘레에 작은 롤러가 달린 바퀴예요. 앞뒤로는 보통 바퀴처럼 구르고, 옆으로는 롤러가 굴러서 미끄러져요. 그래서 제자리 회전이 부드러워요. 지름 약 5칸(64mm), 한 바퀴 돌면 약 200mm 가요.' },
+  motor:     { name: 'IQ 스마트 모터', role: '바퀴나 장치를 돌리는 힘', vis: 'motor',
+    text: '브레인과 선으로 연결하는 모터예요. 안에 각도 센서가 있어서 얼마나 돌았는지 정확히 알아요. 이 드라이빙보드는 바퀴마다 1개씩, 모두 4개를 써요.' },
+  shaft:     { name: '축', role: '모터 힘을 바퀴로 전달', vis: 'shaft',
+    text: '네모난 금속 막대예요. 네모 구멍(모터, 바퀴)에 끼우면 같이 돌고, 빔의 둥근 구멍에서는 헛돌면서 받쳐져요. 끼우는 순서: 모터 → 축 → 안쪽 빔 → 스페이서 → 바퀴 → 스페이서 → 바깥 빔 → 칼라.' },
+  collar:    { name: '칼라', role: '축이 빠지지 않게 잡기', vis: 'shaft',
+    text: '축 끝에 끼우는 고리예요. 축이 옆으로 빠지지 않게 잡아 줘요. 너무 꽉 밀어 조이면 바퀴가 뻑뻑해져요.' },
+  wallOuter: { name: '바깥 빔', role: '프레임 옆 테두리', vis: 'wall',
+    text: '프레임 바깥 테두리예요. 바퀴 축의 바깥쪽 끝을 받쳐서 축이 양쪽에서 지지돼요.' },
+  wallInner: { name: '안쪽 빔', role: '바퀴 안쪽 지지', vis: 'wall',
+    text: '바퀴 안쪽을 받치는 빔이에요. 바퀴가 안쪽 빔과 바깥 빔 사이에 끼어 있어서 축이 휘지 않아요. 모터가 이 빔 바로 안쪽에 붙어 있어요.' },
+  wallEnd:   { name: '끝 빔', role: '프레임 앞뒤 테두리', vis: 'wall',
+    text: '프레임 양쪽 끝을 막는 빔이에요. 옆 빔들을 이어서 네모 틀을 만들어요.' },
+  cornerConn:{ name: '모서리 코너 연결부', role: '빔끼리 직각으로 연결', vis: 'conn',
+    text: '모서리에서 바깥 빔·안쪽 빔·끝 빔을 이어 주는 흰색 연결 부품이에요. 파란 핀으로 고정해요.' },
+  connBlock: { name: '흰 연결 블록', role: '판과 빔을 직각으로 연결', vis: 'conn',
+    text: '흰색 코너 커넥터예요. 판과 빔을 직각으로 이어 줘요. 파란 핀으로 고정해요.' },
+  centerBeam:{ name: '가운데 세로 빔', role: '로봇 가운데 뼈대', vis: 'beam',
+    text: '로봇 가운데를 길게 지나는 빔이에요. 가로 연결판들이 여기에 붙어서 프레임이 비틀리지 않게 잡아 줘요.' },
+  crossPlate:{ name: '가로 연결판', role: '가운데 빔과 연결 블록 잇기', vis: 'plate',
+    text: '가운데 세로 빔과 양옆 흰 연결 블록을 잇는 작은 판이에요.' },
+  widePlate: { name: '넓은 판', role: '양쪽 안쪽 빔 잇기', vis: 'plate',
+    text: 'B면 가운데를 가로로 지나는 판이에요. 양쪽 안쪽 빔을 이어서 프레임을 단단하게 해요.' },
+  smallPlate:{ name: '작은 판', role: '끝 1 쪽 보강', vis: 'plate',
+    text: 'B면에서 끝 1 쪽을 가로지르는 작은 판이에요. A면의 흰 연결 블록과 같이 이 부분을 단단하게 잡아요.' },
+  // 발사부
+  basePlate: { name: '발사부 받침판', role: '발사부를 프레임에 고정', vis: 'plate', text: '발사부 부품들을 프레임 위에 고정하는 판이에요.' },
+  slingFrame:{ name: '새총 틀', role: '고무줄을 거는 기둥', vis: 'beam', text: '고무줄을 거는 양쪽 기둥이에요. 높을수록 고무줄을 길게 당길 수 있어요.' },
+  band:      { name: '고무줄', role: '튕기는 힘', vis: 'band', text: '늘어났다 돌아오는 힘으로 포켓이나 팔을 튕겨요. 개수가 많을수록 세져요.' },
+  pocket:    { name: '포켓', role: '빈백 1개 받침', vis: 'plate', text: '빈백 1개를 담는 받침이에요. 규칙상 로봇은 한 번에 빈백 1개만 가질 수 있어서 1개용으로 만들어요.' },
+  rail:      { name: '레일', role: '포켓이 미끄러지는 길', vis: 'beam', text: '포켓이 미끄러지는 길이에요. 레일 각도가 곧 발사 각도예요.' },
+  railSup:   { name: '레일 받침', role: '레일 아래쪽 지지', vis: 'beam', text: '레일 아래쪽 끝을 받쳐 주는 블록이에요.' },
+  winch:     { name: '윈치(줄 감개)', role: '줄을 감아 당기기', vis: 'shaft', text: '모터 축에 달린 실패예요. 줄을 감아서 포켓을 당겨요.' },
+  string:    { name: '줄', role: '윈치와 포켓 연결', vis: 'string', text: '윈치가 감는 줄이에요. 걸쇠가 놓아주면 포켓이 튀어 나가요.' },
+  rack:      { name: '랙기어', role: '일자 톱니 막대', vis: 'beam', text: '톱니가 일자로 붙은 막대예요. 모터에 달린 작은 기어(피니언)가 돌면서 밀고 당겨요.' },
+  pinion:    { name: '피니언 기어', role: '랙을 움직이는 작은 기어', vis: 'shaft', text: '모터 축에 달린 작은 기어예요. 랙의 톱니와 맞물려 돌아요.' },
+  slipGear:  { name: '슬립기어', role: '자동으로 놓아주는 기어', vis: 'shaft', text: '이빨 일부를 깎아 낸 기어예요. 이빨 있는 부분이 당기다가, 이빨 없는 부분에 오면 저절로 놓아줘서 걸쇠가 필요 없어요.' },
+  latch:     { name: '걸쇠', role: '당긴 포켓 붙잡기', vis: 'conn', text: '당긴 포켓을 붙잡아 두었다가 놓아주는 고리예요. 슬립기어를 쓰면 필요 없어요.' },
+  launchMotor:{ name: '발사부 모터', role: '당기는 장치를 돌림', vis: 'motor', text: '당기는 장치(윈치·랙기어·슬립기어)를 돌리는 모터예요.' },
+  arm:       { name: '투석기 팔', role: '휘둘러 던지는 팔', vis: 'beam', text: '한쪽 끝이 회전축에 고정된 팔이에요. 끝의 컵에 빈백을 담고 휘둘러 던져요.' },
+  armStop:   { name: '팔이 멈춘 위치', role: '참고용 그림', vis: 'ghost', text: '팔이 멈춤대에 닿았을 때의 위치예요. 이때 빈백이 날아가요.' },
+  cup:       { name: '컵', role: '빈백을 담는 곳', vis: 'plate', text: '팔 끝에서 빈백을 담는 받침이에요.' },
+  pivot:     { name: '회전축', role: '팔이 도는 축', vis: 'shaft', text: '투석기 팔이 도는 축이에요.' },
+  pivotTower:{ name: '축 받침대', role: '회전축을 받치는 기둥', vis: 'beam', text: '회전축을 양쪽에서 받치는 기둥이에요.' },
+  stopper:   { name: '멈춤대', role: '팔을 정해진 각도에서 멈춤', vis: 'beam', text: '팔이 정해진 각도에서 멈추게 하는 막대예요. 팔이 멈추는 순간 빈백이 날아가요. 멈춤대 위치가 발사 각도를 정해요.' },
+  stopPost:  { name: '멈춤대 기둥', role: '멈춤대 받침', vis: 'beam', text: '멈춤대를 받치는 기둥이에요.' },
+  bandAnchor:{ name: '고무줄 고리', role: '고무줄 한쪽 끝을 거는 곳', vis: 'beam', text: '고무줄 한쪽 끝을 거는 곳이에요.' },
+  liftTower: { name: '리프트 기둥', role: '캐리지가 오르내리는 길', vis: 'beam', text: '캐리지가 오르내리는 길이에요. 경기 시작 후에는 높이 제한이 없어서 위로 더 늘릴 수 있어요.' },
+  carriage:  { name: '캐리지', role: '리프트를 타고 오르내리는 판', vis: 'plate', text: '리프트 기둥을 타고 오르내리는 판이에요.' },
+  tray:      { name: '받침', role: '빈백을 올려 두는 곳', vis: 'plate', text: '빈백을 올려 두는 곳이에요. 골 위에서 기울여 내려놓아요.' },
+  liftMotor: { name: '리프트 모터', role: '캐리지를 올리고 내림', vis: 'motor', text: '줄이나 체인으로 캐리지를 올리고 내리는 모터예요.' },
+  // 인테이커
+  roller:    { name: '롤러', role: '빈백을 빨아들이는 막대', vis: 'shaft', text: '돌아가면서 바닥의 빈백을 안쪽으로 빨아들이는 막대예요.' },
+  intakeArm: { name: '롤러 팔', role: '롤러를 잡아 주는 판', vis: 'plate', text: '롤러를 양쪽에서 잡아 주는 판이에요.' },
+  intakeMotor:{ name: '인테이크 모터', role: '인테이커를 돌림', vis: 'motor', text: '롤러·집게·벨트를 움직이는 모터예요.' },
+  clawArm:   { name: '집게 팔', role: '집게를 앞으로 내밀기', vis: 'beam', text: '집게를 앞으로 내밀어 주는 팔이에요.' },
+  wrist:     { name: '손목 판', role: '손가락을 다는 곳', vis: 'plate', text: '집게 손가락이 달리는 판이에요.' },
+  finger:    { name: '집게 손가락', role: '빈백을 잡는 손가락', vis: 'beam', text: '빈백을 양쪽에서 집는 손가락이에요.' },
+  belt:      { name: '컨베이어 벨트', role: '빈백을 위로 실어 나름', vis: 'plate', text: '비스듬히 놓인 벨트예요. 돌면서 빈백을 위로 실어 날라요.' },
+  guide:     { name: '옆 가이드', role: '빈백이 떨어지지 않게 막기', vis: 'plate', text: '벨트 양옆을 막아서 빈백이 떨어지지 않게 해요.' },
+  leg:       { name: '받침 다리', role: '벨트 위쪽 지지', vis: 'beam', text: '컨베이어 위쪽을 받쳐 주는 다리예요.' },
+  // 브레인
+  brain:     { name: 'IQ 브레인', role: '로봇의 두뇌', vis: 'brain', text: '로봇의 두뇌예요. 모터·센서를 꽂는 포트가 12개 있고, 컨트롤러 신호를 받아 모터를 움직여요.' },
+  battery:   { name: 'IQ 배터리', role: '전기를 공급', vis: 'battery', text: '브레인 뒤쪽 홈에 끼워 쓰는 충전 배터리예요. 브레인과 함께 움직이고, 무거운 편이라 위치가 무게중심에 영향을 줘요.' },
+  // 미정 상자
+  phLauncher:{ name: '발사부 자리', role: '아직 안 정함', vis: 'ph', text: '발사 방식을 아직 안 골랐어요. 조합 탭에서 고르면 이 상자가 그 모양으로 바뀌어요.' },
+  phIntake:  { name: '인테이커 자리', role: '아직 안 정함', vis: 'ph', text: '인테이커를 아직 안 골랐어요. 조합 탭에서 고르면 이 상자가 바뀌어요.' },
+  phBrain:   { name: '브레인·배터리 자리', role: '아직 안 정함', vis: 'ph', text: '브레인 위치를 아직 안 정했어요. 브레인과 배터리가 들어갈 크기의 상자예요.' },
+  bag:       { name: '빈백 (크기 비교용)', role: '득점 물체 · 로봇 부품 아님', vis: 'bag', text: '득점 물체예요. 크기는 약 2인치(4칸)로 잡았어요(실측 필요). 로봇 부품이 아니라서 무게·크기 계산에서 빠져요.' },
+  // 추가 부품
+  cBeam:     { name: '빔', role: '추가한 부품', vis: 'beam', text: '직접 추가한 빔이에요. 위치와 크기를 칸 단위로 맞출 수 있어요.' },
+  cPlate:    { name: '판', role: '추가한 부품', vis: 'plate', text: '직접 추가한 판이에요.' },
+  cMotor:    { name: '모터', role: '추가한 부품', vis: 'motor', text: '직접 추가한 IQ 스마트 모터예요.' },
+  cConn:     { name: '연결 블록', role: '추가한 부품', vis: 'conn', text: '직접 추가한 연결 블록이에요.' },
+  cWheel:    { name: '바퀴', role: '추가한 부품', vis: 'wheel', text: '직접 추가한 바퀴예요.' },
+  cBox:      { name: '임시 상자', role: '추가한 부품', vis: 'ph', text: '아직 모양을 정하지 않은 부품 자리를 잡아 두는 상자예요.' },
+};
+const ADDABLE = [
+  { kind: 'cBeam', label: '빔', s: [1, 10, 0.5], mass: 0 },
+  { kind: 'cPlate', label: '판', s: [4, 8, 0.5], mass: 0 },
+  { kind: 'cMotor', label: '모터', s: [3.5, 4.5, 2], mass: 75 },
+  { kind: 'cConn', label: '연결 블록', s: [1.75, 1.75, 1.5], mass: 3 },
+  { kind: 'cWheel', label: '바퀴', s: [2.2, 5, 5], mass: 40, cyl: true },
+  { kind: 'cBox', label: '임시 상자', s: [4, 4, 4], mass: 40 },
+];
+
+/* ---------- 경기 규칙 요약 ---------- */
+const RULES = [
+  ['시작 크기', '폭 11 × 길이 20 × 높이 15in 안에 들어가야 해요 (SG1·R3).'],
+  ['시작 후', '길이 24in까지 늘어날 수 있고 폭은 11in 그대로, 높이는 제한 없어요 (SG2·SG3).'],
+  ['빈백 보유', '한 번에 1개만 가질 수 있어요 (SG6).'],
+  ['밖으로 나간 빈백', '경기장 밖으로 나가면 다시 못 써요 (SG4).'],
+  ['L4 골', '노란 빈백만 점수가 돼요 (SC5).'],
+  ['점수', '바닥 골 1 · L1 3 · L2 6 · L3 12 · L4 16점.'],
+];
+
+/* ---------- 아이콘(32×32, 선) ---------- */
+const ICON = {
+  sling_back: '<path d="M9 27V17M9 17L4 8M9 17l5-9"/><path d="M4 8l17 7M14 8l7 7" opacity=".55"/><rect x="20" y="12.5" width="5" height="5" rx="1"/><path d="M28 24h-8m0 0l3-2.5M20 24l3 2.5"/>',
+  sling_down: '<path d="M6 27V5M26 27V5"/><path d="M6 6l10 13M26 6L16 19" opacity=".55"/><rect x="13" y="18" width="6" height="4" rx="1"/><path d="M16 24v5m0 0l-2.5-2.5M16 29l2.5-2.5"/>',
+  catapult: '<path d="M3 28h26M12 28l4-9 4 9"/><path d="M16 19L5 13"/><path d="M3 10.5c.5 3 3 4 5 3.5"/><path d="M22 6a12 12 0 0 1 6 9" stroke-dasharray="2 2"/>',
+  lift: '<path d="M8 28V4M22 28V4"/><rect x="9" y="13" width="12" height="4" rx="1"/><path d="M21 15h6"/><path d="M15 9V3m0 0l-2.5 2.5M15 3l2.5 2.5"/>',
+  front: '<rect x="9" y="11" width="14" height="17" rx="2"/><path d="M16 9V2m0 0l-3 3m3-3l3 3"/>',
+  back: '<rect x="9" y="4" width="14" height="17" rx="2"/><path d="M16 23v7m0 0l-3-3m3 3l3-3"/>',
+  roller: '<circle cx="16" cy="13" r="7"/><path d="M16 6a7 7 0 0 1 7 7" stroke-dasharray="0"/><path d="M23 13l-2-2.5M23 13l2-2.5"/><rect x="11" y="23" width="10" height="5" rx="2"/>',
+  claw: '<path d="M16 3v9M10 12h12M10 12l-2 9 3 4M22 12l2 9-3 4"/><rect x="13" y="20" width="6" height="5" rx="1.5"/>',
+  conveyor: '<path d="M4 26L26 8"/><path d="M6 29L28 11"/><circle cx="5" cy="27.5" r="2"/><circle cx="27" cy="9.5" r="2"/><rect x="12" y="15" width="5" height="4" rx="1" transform="rotate(-39 14.5 17)"/>',
+  side: '<rect x="7" y="5" width="13" height="22" rx="2"/><rect x="22" y="10" width="5" height="12" rx="1" fill="currentColor"/>',
+  bback: '<rect x="9" y="3" width="14" height="19" rx="2"/><rect x="11" y="24" width="10" height="5" rx="1" fill="currentColor"/>',
+  top: '<rect x="7" y="5" width="18" height="22" rx="2"/><rect x="11" y="10" width="10" height="12" rx="1" fill="currentColor"/>',
+  winch: '<circle cx="11" cy="16" r="6"/><circle cx="11" cy="16" r="2"/><path d="M11 10h17"/><rect x="25" y="7" width="4" height="6" rx="1"/>',
+  rack: '<path d="M3 22h26M4 22v-3h2v3M9 22v-3h2v3M14 22v-3h2v3M19 22v-3h2v3M24 22v-3h2v3"/><circle cx="16" cy="11" r="5"/>',
+  slip: '<circle cx="16" cy="16" r="9"/><path d="M16 4v3M24.5 7.5l-2 2M28 16h-3M7.5 7.5l2 2M4 16h3"/><path d="M8 23l16-0" stroke-dasharray="1.5 2"/>',
+  none: '<rect x="6" y="6" width="20" height="20" rx="3" stroke-dasharray="3 3"/><path d="M13 13.5a3 3 0 1 1 4 2.8c-.8.4-1 1-1 1.7M16 21v.5"/>',
+};
+const OPT_ICON = { sling_back: 'sling_back', sling_down: 'sling_down', catapult: 'catapult', lift: 'lift',
+  front: 'front', back: 'back', roller: 'roller', claw: 'claw', conveyor: 'conveyor',
+  side: 'side', bback: 'bback', top: 'top', winch: 'winch', rack: 'rack', slip: 'slip' };
+function iconSvg(name) {
+  return `<svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name] || ICON.none}</svg>`;
+}
+
+/* =========================================================
+   로봇 모델: 설계 문서 → 부품 목록
+   좌표(칸): x = 오른쪽+, y = 앞+, z = 위+, 바닥 z=0, 로봇 가운데 x=y=0
+   드라이빙보드는 "사진 좌표"(u: A면 사진 왼→오, v: 끝1→끝2, zf: B면→A면)로
+   만든 뒤 앞·위 선택에 맞춰 뒤집어 놓는다.
+   ========================================================= */
+const r2 = n => Math.round(n * 2) / 2;
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const clone = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
+const isObj = o => o && typeof o === 'object' && !Array.isArray(o);
+function deepMerge(t, p) {
+  for (const k of Object.keys(p)) {
+    const v = p[k];
+    if (isObj(v) && isObj(t[k])) deepMerge(t[k], v);
+    else t[k] = clone(v);
+  }
+  return t;
+}
+const add3 = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+
+function defaultDesign(name) {
+  const now = Date.now();
+  return {
+    name: name || '구상안 1', deleted: false,
+    frame: { w: 16, l: 20 },
+    orient: { top: null, front: null },
+    opts: { launch: null, dir: 'front', intake: null, brain: null, bands: 4, rail: 40, pull: 'winch' },
+    mods: {}, edits: {}, added: {}, notes: '',
+    createdAt: now, createdBy: null, updatedAt: now, updatedBy: null,
+  };
+}
+function normDesign(d) {
+  const def = defaultDesign();
+  const o = Object.assign({}, def, d || {});
+  o.frame = Object.assign({}, def.frame, (d && d.frame) || {});
+  o.frame.w = clamp(Number(o.frame.w) || 16, 14, 24);
+  o.frame.l = clamp(Number(o.frame.l) || 20, 19, 32);
+  o.orient = Object.assign({}, def.orient, (d && d.orient) || {});
+  o.opts = Object.assign({}, def.opts, (d && d.opts) || {});
+  o.opts.bands = clamp(Math.round(Number(o.opts.bands) || 4), 1, 8);
+  o.opts.rail = clamp(Math.round(Number(o.opts.rail) || 40), 15, 85);
+  o.mods = Object.assign({}, (d && d.mods) || {});
+  o.edits = Object.assign({}, (d && d.edits) || {});
+  o.added = Object.assign({}, (d && d.added) || {});
+  return o;
+}
+
+/* ---------- 방향 변환 ---------- */
+function orientT(d) {
+  const W = d.frame.w, L = d.frame.l;
+  const top = (d.orient && d.orient.top) || 'A';
+  const front = (d.orient && d.orient.front) || 'end1';
+  const sx = ((top === 'A') === (front === 'end1')) ? 1 : -1;
+  const sy = front === 'end1' ? -1 : 1;
+  const zf = top === 'B';
+  return {
+    W, L, sx, sy, zf, top, front,
+    decided: !!(d.orient && d.orient.top && d.orient.front),
+    p: (u, v, z) => [sx * (u - W / 2), sy * (v - L / 2), zf ? 2 * AXLE_Z - z : z],
+    inv: (dx, dy, dz) => [sx * dx, sy * dy, zf ? -dz : dz],
+  };
+}
+
+/* ---------- 부품 만들기 도우미 ---------- */
+function P_box(key, kind, c, s, o) { return Object.assign({ key, kind, shape: 'box', c, s, rx: 0, collide: true }, o || {}); }
+function P_rng(key, kind, x0, x1, y0, y1, z0, z1, o) {
+  return P_box(key, kind, [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2], [x1 - x0, y1 - y0, z1 - z0], o);
+}
+function P_cyl(key, kind, c, axis, r, len, o) {
+  const s = axis === 'x' ? [len, 2 * r, 2 * r] : axis === 'y' ? [2 * r, len, 2 * r] : [2 * r, 2 * r, len];
+  return Object.assign({ key, kind, shape: 'cyl', c, axis, r, len, s, rx: 0, collide: true }, o || {});
+}
+function P_line(key, kind, a, b, w, o) {
+  return Object.assign({ key, kind, shape: 'line', a, b, w: w || 0.07,
+    c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2], s: [0, 0, 0], rx: 0, collide: false }, o || {});
+}
+/* y-z 평면에서 p0→p1 방향으로 기울어진 상자 (x는 cx 중심) */
+function P_pitch(key, kind, cx, p0, p1, w, thick, nOff, o) {
+  const dy = p1[0] - p0[0], dz = p1[1] - p0[1];
+  const len = Math.hypot(dy, dz);
+  let ang = Math.atan2(dz, dy) * 180 / Math.PI;
+  if (ang > 90) ang -= 180; if (ang <= -90) ang += 180;
+  const t = ang * Math.PI / 180, n = [-Math.sin(t), Math.cos(t)];
+  const c = [cx, (p0[0] + p1[0]) / 2 + n[0] * (nOff || 0), (p0[1] + p1[1]) / 2 + n[1] * (nOff || 0)];
+  return P_box(key, kind, c, [w, len, thick], Object.assign({ rx: ang }, o || {}));
+}
+function aabb(p) {
+  if (p.shape === 'line') {
+    const r = p.w || 0.07;
+    return { min: [0, 1, 2].map(i => Math.min(p.a[i], p.b[i]) - r), max: [0, 1, 2].map(i => Math.max(p.a[i], p.b[i]) + r) };
+  }
+  const t = (p.rx || 0) * Math.PI / 180, c = Math.abs(Math.cos(t)), s = Math.abs(Math.sin(t));
+  const hx = p.s[0] / 2, hy = c * p.s[1] / 2 + s * p.s[2] / 2, hz = s * p.s[1] / 2 + c * p.s[2] / 2;
+  return { min: [p.c[0] - hx, p.c[1] - hy, p.c[2] - hz], max: [p.c[0] + hx, p.c[1] + hy, p.c[2] + hz] };
+}
+const KMASS = { omni: 40, motor: 75, shaft: 3, collar: 1, cornerConn: 4, connBlock: 3, launchMotor: 75, intakeMotor: 75,
+  liftMotor: 75, brain: 190, battery: 110, band: 1.5, string: 0.5, bag: 0, armStop: 0, cMotor: 75, cWheel: 40, cConn: 3 };
+function massFor(p) {
+  if (p.mass != null) return p.mass;
+  if (KMASS[p.kind] != null) return KMASS[p.kind];
+  if (p.ph) { const v = p.s[0] * p.s[1] * p.s[2]; return Math.round(v * 0.5); }
+  const a = [...p.s].sort((x, y) => x - y);
+  return Math.round(0.45 * a[1] * a[2] * 10) / 10;
+}
+
+/* ---------- 드라이빙보드 (사진으로 잡은 구도) ---------- */
+function driveSpecs(W, L) {
+  const S = [];
+  const R = (key, kind, u0, u1, v0, v1, z0, z1, t) => S.push({ key, kind, shape: 'box', u0, u1, v0, v1, z0, z1, t: t || {} });
+  const C = (key, kind, uc, vc, zc, r, len, t) => S.push({ key, kind, shape: 'cyl', uc, vc, zc, r, len, t: t || {} });
+  R('wallL', 'wallOuter', 0, 0.5, 0.5, L - 0.5, 1.5, 3.5, { side: 'L', face: 'frame' });
+  R('wallR', 'wallOuter', W - 0.5, W, 0.5, L - 0.5, 1.5, 3.5, { side: 'R', face: 'frame' });
+  R('wallE1', 'wallEnd', 0, W, 0, 0.5, 1.5, 3.5, { end: '1', face: 'frame' });
+  R('wallE2', 'wallEnd', 0, W, L - 0.5, L, 1.5, 3.5, { end: '2', face: 'frame' });
+  R('innerL', 'wallInner', 3.0, 3.5, 0.5, L - 0.5, 1.5, 3.5, { side: 'L', face: 'frame' });
+  R('innerR', 'wallInner', W - 3.5, W - 3.0, 0.5, L - 0.5, 1.5, 3.5, { side: 'R', face: 'frame' });
+  for (const e of ['1', '2']) {
+    const cv0 = e === '1' ? 0.5 : L - 1.75, cv1 = e === '1' ? 1.75 : L - 0.5;
+    const wv = e === '1' ? 4.5 : L - 4.5;
+    const mv0 = e === '1' ? 3.0 : L - 7.5, mv1 = e === '1' ? 7.5 : L - 3.0;
+    for (const s of ['L', 'R']) {
+      const t = { end: e, side: s, face: 'frame' }, id = e + s, Lf = s === 'L';
+      R('cc_' + id, 'cornerConn', Lf ? 0.5 : W - 3.0, Lf ? 3.0 : W - 0.5, cv0, cv1, 1.5, 3.5, t);
+      C('wheel_' + id, 'omni', Lf ? 1.75 : W - 1.75, wv, AXLE_Z, 2.5, 2.2, t);
+      R('shaft_' + id, 'shaft', Lf ? -0.35 : W - 5.0, Lf ? 5.0 : W + 0.35, wv - 0.13, wv + 0.13, AXLE_Z - 0.13, AXLE_Z + 0.13, Object.assign({ nc: true }, t));
+      C('collar_' + id, 'collar', Lf ? -0.175 : W + 0.175, wv, AXLE_Z, 0.45, 0.35, t);
+      R('motor_' + id, 'motor', Lf ? 3.5 : W - 7.0, Lf ? 7.0 : W - 3.5, mv0, mv1, 1.5, 3.5, t);
+    }
+  }
+  // A면: 가운데 세로 빔 + 흰 연결 블록 줄(끝1 쪽 1줄, 가운데 2줄)
+  R('beamC', 'centerBeam', W / 2 - 1, W / 2 + 1, 1.75, L - 3.75, 3.0, 3.5, { face: 'A' });
+  const mc = clamp(L / 2 + 0.5, 9.3, L - 9.3);
+  const rows = [['T', 1.25, 3.0, '1'], ['M1', mc - 1.75, mc, null], ['M2', mc, mc + 1.75, null]];
+  for (const [r, v0, v1, e] of rows) {
+    R(`r${r}_cL`, 'connBlock', 3.5, 5.25, v0, v1, 2.0, 3.5, { face: 'A', side: 'L', end: e, row: r });
+    R(`r${r}_pL`, 'crossPlate', 5.25, W / 2 - 1, v0, v1, 3.0, 3.5, { face: 'A', side: 'L', end: e, row: r });
+    R(`r${r}_pR`, 'crossPlate', W / 2 + 1, W - 5.25, v0, v1, 3.0, 3.5, { face: 'A', side: 'R', end: e, row: r });
+    R(`r${r}_cR`, 'connBlock', W - 5.25, W - 3.5, v0, v1, 2.0, 3.5, { face: 'A', side: 'R', end: e, row: r });
+  }
+  // B면: 넓은 판 2개(가운데), 작은 판 2개(끝1 쪽)
+  R('wideB1', 'widePlate', 3.5, W - 3.5, mc - 1.75, mc, 1.5, 2.0, { face: 'B', row: 'M1' });
+  R('wideB2', 'widePlate', 3.5, W - 3.5, mc, mc + 1.75, 1.5, 2.0, { face: 'B', row: 'M2' });
+  R('smallBL', 'smallPlate', 3.5, W / 2, 1.0, 3.0, 1.5, 2.0, { face: 'B', side: 'L', end: '1' });
+  R('smallBR', 'smallPlate', W / 2, W - 3.5, 1.0, 3.0, 1.5, 2.0, { face: 'B', side: 'R', end: '1' });
+  return S;
+}
+
+function buildDrive(d, T, out, hidden) {
+  for (const sp of driveSpecs(T.W, T.L)) {
+    const ed = (d.edits && d.edits[sp.key]) || null;
+    if (ed && ed.hidden) { hidden.push({ key: sp.key, kind: sp.kind, tags: sp.t, group: 'drive' }); continue; }
+    const dx = (ed && ed.dx) || 0, dy = (ed && ed.dy) || 0, dz = (ed && ed.dz) || 0;
+    const dw = (ed && ed.dw) || 0, dl = (ed && ed.dl) || 0, dh = (ed && ed.dh) || 0;
+    let p;
+    if (sp.shape === 'cyl') {
+      p = P_cyl(sp.key, sp.kind, T.p(sp.uc + dx, sp.vc + dy, sp.zc + dz), 'x', Math.max(0.2, sp.r + dl / 2), Math.max(0.25, sp.len + dw));
+    } else {
+      p = P_box(sp.key, sp.kind,
+        T.p((sp.u0 + sp.u1) / 2 + dx, (sp.v0 + sp.v1) / 2 + dy, (sp.z0 + sp.z1) / 2 + dz),
+        [Math.max(0.25, sp.u1 - sp.u0 + dw), Math.max(0.25, sp.v1 - sp.v0 + dl), Math.max(0.25, sp.z1 - sp.z0 + dh)]);
+    }
+    p.group = 'drive'; p.mod = null; p.tags = sp.t; p.collide = !sp.t.nc;
+    p.edited = !!(dx || dy || dz || dw || dl || dh);
+    out.push(p);
+  }
+}
+
+/* ---------- 발사부 ---------- */
+function mirrorY(p) { p.c[1] = -p.c[1]; p.rx = -(p.rx || 0); if (p.a) { p.a[1] = -p.a[1]; p.b[1] = -p.b[1]; } }
+function shiftPart(p, v) { p.c = add3(p.c, v); if (p.a) { p.a = add3(p.a, v); p.b = add3(p.b, v); } }
+function finishMod(P, d, mod, mirror) {
+  for (const p of P) { p.mod = mod; p.group = mod; }
+  if (mirror) P.forEach(mirrorY);
+  const m = d.mods && d.mods[mod];
+  if (m && (m.dx || m.dy || m.dz)) P.forEach(p => shiftPart(p, [m.dx || 0, m.dy || 0, m.dz || 0]));
+  return P;
+}
+function bagPart(key, c, rx) { return P_box(key, 'bag', c, [3.8, 3.8, 1.6], { rx: rx || 0, bag: true, collide: false, mass: 0 }); }
+
+function buildLauncher(d, T) {
+  const o = d.opts, hw = T.W / 2, iw = hw - 3.5, z0 = ZTOP, P = [];
+  const add = p => (P.push(p), p);
+  if (!o.launch) {
+    add(P_rng('L:ph', 'phLauncher', -iw + 0.5, iw - 0.5, -6, 4, z0, z0 + 7, { ph: true, mass: 250 }));
+    return finishMod(P, d, 'launcher', o.dir === 'back');
+  }
+  const N = clamp(o.bands | 0, 1, 8);
+  const awayFromPosts = (cy, half, yT) => (cy + half > yT - 0.6 && cy - half < yT + 0.6) ? yT - 0.6 - half : cy;
+  if (SLING(o.launch)) {
+    const down = o.launch === 'sling_down';
+    const thd = clamp(o.rail, 15, 85), th = thd * Math.PI / 180;
+    const Lr = down ? 9.5 : 11, yT = down ? 1.5 : 3.0, zB = z0 + 1.2;
+    const u = [Math.cos(th), Math.sin(th)], n = [-Math.sin(th), Math.cos(th)];
+    const B = [yT - Lr * u[0], zB], Tp = [yT, zB + Lr * u[1]];
+    add(P_rng('L:base', 'basePlate', -4, 4, Math.min(-7, B[0] - 1), 5, z0, z0 + 0.5, { mass: 30 }));
+    add(P_pitch('L:rail', 'rail', 0, B, Tp, 2.4, 0.4, 0, { mass: 20 }));
+    add(P_rng('L:railsup', 'railSup', -1.2, 1.2, B[0] - 0.5, B[0] + 0.5, z0 + 0.5, zB - 0.3, { mass: 4 }));
+    const postTop = Tp[1] + 1.2;
+    add(P_rng('L:postL', 'slingFrame', -3.1, -2.4, yT - 0.5, yT + 0.5, z0 + 0.5, postTop, { mass: 12 }));
+    add(P_rng('L:postR', 'slingFrame', 2.4, 3.1, yT - 0.5, yT + 0.5, z0 + 0.5, postTop, { mass: 12 }));
+    const dc = down ? 5.5 : 6.5;
+    const Pc = [Tp[0] - u[0] * dc + n[0] * 0.6, Tp[1] - u[1] * dc + n[1] * 0.6];
+    add(P_box('L:pocket', 'pocket', [0, Pc[0], Pc[1]], [4.0, 3.0, 0.8], { rx: thd, mass: 8 }));
+    add(bagPart('L:bag', [0, Pc[0] + n[0] * 1.2, Pc[1] + n[1] * 1.2], thd));
+    const bk = [Pc[0] - u[0] * 1.3 + n[0] * 0.2, Pc[1] - u[1] * 1.3 + n[1] * 0.2];
+    for (let i = 0; i < N; i++) {
+      const sd = i % 2 === 0 ? -1 : 1, k = Math.floor(i / 2);
+      add(P_line('L:band' + i, 'band', [sd * 2.75, yT, postTop - 0.4 - k * 0.3], [sd * 1.8, bk[0], bk[1] - k * 0.1], 0.07));
+    }
+    const mzc = z0 + 0.5, mzt = z0 + 4.0;
+    if (o.pull === 'winch' || !o.pull) {
+      const cy = awayFromPosts(B[0] + 1.5, 2.25, yT);
+      add(P_rng('L:motor', 'launchMotor', 2.5, 4.5, cy - 2.25, cy + 2.25, mzc, mzt));
+      add(P_cyl('L:winch', 'winch', [1.6, cy, z0 + 1.6], 'x', 0.8, 1.6, { mass: 6 }));
+      add(P_line('L:string', 'string', [1.0, cy, z0 + 2.4], [0, bk[0], bk[1]], 0.04));
+      add(P_box('L:latch', 'latch', [0, Pc[0] - u[0] * 1.9 - n[0] * 0.55, Pc[1] - u[1] * 1.9 - n[1] * 0.55], [1.2, 0.8, 0.8], { rx: thd, mass: 4 }));
+    } else if (o.pull === 'rack') {
+      const mid = [(B[0] + Tp[0]) / 2, (B[1] + Tp[1]) / 2];
+      add(P_box('L:rack', 'rack', [0, mid[0] - n[0] * 0.55, mid[1] - n[1] * 0.55], [0.5, Lr - 2, 0.5], { rx: thd, mass: 12 }));
+      add(P_cyl('L:pinion', 'pinion', [0.9, mid[0] - n[0] * 1.25, mid[1] - n[1] * 1.25], 'x', 0.9, 0.5, { mass: 4 }));
+      const cy = awayFromPosts(mid[0], 2.25, yT);
+      add(P_rng('L:motor', 'launchMotor', 2.5, 4.5, cy - 2.25, cy + 2.25, mzc, mzt));
+      add(P_box('L:latch', 'latch', [0, Pc[0] - u[0] * 1.9 - n[0] * 0.55, Pc[1] - u[1] * 1.9 - n[1] * 0.55], [1.2, 0.8, 0.8], { rx: thd, mass: 4 }));
+    } else {
+      const gz = Math.max(z0 + 2.1, Pc[1] - 1.6);
+      add(P_cyl('L:slip', 'slipGear', [2.3, Pc[0], gz], 'x', 1.5, 0.5, { mass: 8 }));
+      const cy = awayFromPosts(Pc[0], 2.25, yT);
+      add(P_rng('L:motor', 'launchMotor', 2.6, 4.6, cy - 2.25, cy + 2.25, mzc, mzt));
+    }
+  } else if (o.launch === 'catapult') {
+    add(P_rng('L:base', 'basePlate', -4, 4, -7, 5, z0, z0 + 0.5, { mass: 30 }));
+    const Py = 3.0, Pz = z0 + 3.0, La = 10;
+    add(P_rng('L:towerL', 'pivotTower', -3.1, -2.4, Py - 0.5, Py + 0.5, z0 + 0.5, Pz + 0.6, { mass: 6 }));
+    add(P_rng('L:towerR', 'pivotTower', 2.4, 3.1, Py - 0.5, Py + 0.5, z0 + 0.5, Pz + 0.6, { mass: 6 }));
+    add(P_cyl('L:pivot', 'pivot', [0, Py, Pz], 'x', 0.22, 6.6, { collide: false, mass: 4 }));
+    const bc = -12 * Math.PI / 180, a = [-Math.cos(bc), Math.sin(bc)];
+    const A0 = [Py, Pz], A1 = [Py + a[0] * La, Pz + a[1] * La];
+    const arm = add(P_pitch('L:arm', 'arm', 0, A0, A1, 1.0, 0.6, 0, { mass: 20 }));
+    const ft = arm.rx * Math.PI / 180, an = [-Math.sin(ft), Math.cos(ft)];
+    const cupC = [Py + a[0] * (La - 1.6) + an[0] * 0.75, Pz + a[1] * (La - 1.6) + an[1] * 0.75];
+    add(P_box('L:cup', 'cup', [0, cupC[0], cupC[1]], [4.0, 3.2, 1.0], { rx: arm.rx, mass: 8 }));
+    add(bagPart('L:bag', [0, cupC[0] + an[0] * 1.3, cupC[1] + an[1] * 1.3], arm.rx));
+    const bs = (90 - clamp(o.rail, 15, 85)) * Math.PI / 180;
+    const as = [-Math.cos(bs), Math.sin(bs)], tv = [Math.sin(bs), Math.cos(bs)];
+    const Sp = [Py + as[0] * 6 + tv[0] * 0.75, Pz + as[1] * 6 + tv[1] * 0.75];
+    add(P_rng('L:stop', 'stopper', -3.0, 3.0, Sp[0] - 0.4, Sp[0] + 0.4, Sp[1] - 0.4, Sp[1] + 0.4, { mass: 8 }));
+    add(P_rng('L:stopL', 'stopPost', -3.0, -2.55, Sp[0] - 0.3, Sp[0] + 0.3, z0 + 0.5, Sp[1] - 0.4, { mass: 4 }));
+    add(P_rng('L:stopR', 'stopPost', 2.55, 3.0, Sp[0] - 0.3, Sp[0] + 0.3, z0 + 0.5, Sp[1] - 0.4, { mass: 4 }));
+    add(P_pitch('L:armStop', 'armStop', 0, A0, [Py + as[0] * La, Pz + as[1] * La], 1.0, 0.6, 0, { ghost: true, collide: false, mass: 0 }));
+    add(P_rng('L:anchor', 'bandAnchor', -2.2, 2.2, 4.4, 5.0, z0 + 0.5, z0 + 1.6, { mass: 6 }));
+    const Ab = [Py + a[0] * 2.8, Pz + a[1] * 2.8];
+    for (let i = 0; i < N; i++) {
+      const sd = i % 2 === 0 ? -1 : 1, k = Math.floor(i / 2);
+      add(P_line('L:band' + i, 'band', [sd * (0.35 + k * 0.12), Ab[0], Ab[1] - 0.3], [sd * (1.2 + k * 0.25), 4.7, z0 + 1.4], 0.07));
+    }
+    add(P_rng('L:motor', 'launchMotor', 2.5, 4.5, -3.0, 1.5, z0 + 0.5, z0 + 4.0));
+    add(P_cyl('L:slip', 'slipGear', [2.2, -0.75, z0 + 2.4], 'x', 1.5, 0.5, { mass: 8 }));
+  } else { // lift
+    add(P_rng('L:towerL', 'liftTower', -3.4, -2.6, 4.0, 5.0, z0, z0 + 13, { mass: 15 }));
+    add(P_rng('L:towerR', 'liftTower', 2.6, 3.4, 4.0, 5.0, z0, z0 + 13, { mass: 15 }));
+    add(P_rng('L:carriage', 'carriage', -2.6, 2.6, 5.0, 5.8, z0 + 2.0, z0 + 6.0, { mass: 10 }));
+    add(P_rng('L:tray', 'tray', -2.2, 2.2, 5.8, 9.4, z0 + 2.0, z0 + 2.6, { mass: 8 }));
+    add(bagPart('L:bag', [0, 7.6, z0 + 2.6 + 0.85], 0));
+    add(P_rng('L:motor', 'liftMotor', -1.0, 1.0, -0.5, 4.0, z0, z0 + 3.5));
+  }
+  return finishMod(P, d, 'launcher', o.dir === 'back');
+}
+
+/* ---------- 인테이커 (항상 앞쪽) ---------- */
+function buildIntake(d, T) {
+  const o = d.opts, hl = T.L / 2, hw = T.W / 2, iw = hw - 3.5, P = [];
+  const add = p => (P.push(p), p);
+  if (!o.intake) {
+    add(P_rng('I:ph', 'phIntake', -iw, iw, hl, hl + 4.0, 0.4, 4.4, { ph: true, mass: 120 }));
+  } else if (o.intake === 'roller') {
+    add(P_rng('I:armL', 'intakeArm', -4.6, -4.0, hl, hl + 3.6, 0.8, 4.3, { mass: 6 }));
+    add(P_rng('I:armR', 'intakeArm', 4.0, 4.6, hl, hl + 3.6, 0.8, 4.3, { mass: 6 }));
+    add(P_cyl('I:roller', 'roller', [0, hl + 2.6, 1.5], 'x', 1.2, 8.0, { mass: 15 }));
+    add(P_rng('I:motor', 'intakeMotor', 4.6, 6.6, hl, hl + 4.5, 0.8, 4.3));
+  } else if (o.intake === 'claw') {
+    add(P_rng('I:mount', 'wrist', -2.8, 2.8, hl, hl + 0.6, 1.0, 4.4, { mass: 6 }));
+    add(P_rng('I:arm', 'clawArm', -0.8, 0.8, hl + 0.6, hl + 3.4, 3.4, 4.2, { mass: 8 }));
+    add(P_rng('I:wrist', 'wrist', -2.6, 2.6, hl + 3.4, hl + 4.0, 1.0, 4.2, { mass: 6 }));
+    add(P_rng('I:fingerL', 'finger', -2.6, -2.0, hl + 4.0, hl + 6.4, 0.4, 2.6, { mass: 4 }));
+    add(P_rng('I:fingerR', 'finger', 2.0, 2.6, hl + 4.0, hl + 6.4, 0.4, 2.6, { mass: 4 }));
+    add(P_rng('I:motor', 'intakeMotor', 2.8, 4.8, hl, hl + 4.5, 0.8, 4.3));
+  } else { // conveyor
+    const F = [hl + 3.4, 0.7], K = [hl - 3.6, 8.6];
+    add(P_pitch('I:belt', 'belt', 0, F, K, 5.0, 0.6, 0, { mass: 25 }));
+    add(P_pitch('I:guideL', 'guide', -2.75, F, K, 0.5, 1.4, 0.9, { mass: 6 }));
+    add(P_pitch('I:guideR', 'guide', 2.75, F, K, 0.5, 1.4, 0.9, { mass: 6 }));
+    const ly = hl - 2.2, lz = F[1] + (F[0] - ly) / (F[0] - K[0]) * (K[1] - F[1]) - 0.5;
+    add(P_rng('I:legL', 'leg', -2.95, -2.45, ly - 0.25, ly + 0.25, ZTOP, lz, { mass: 3 }));
+    add(P_rng('I:legR', 'leg', 2.45, 2.95, ly - 0.25, ly + 0.25, ZTOP, lz, { mass: 3 }));
+    add(P_rng('I:motor', 'intakeMotor', -5.0, -3.0, K[0] - 2.25, K[0] + 2.25, K[1] - 1.75, K[1] + 1.75));
+  }
+  return finishMod(P, d, 'intake', false);
+}
+
+/* ---------- 브레인 + 배터리 ---------- */
+function buildBrain(d, T) {
+  const o = d.opts, hl = T.L / 2, hw = T.W / 2, P = [];
+  const add = p => (P.push(p), p);
+  if (!o.brain) {
+    add(P_rng('B:ph', 'phBrain', -4.5, 4.5, -(hl + 3.6), -(hl + 0.5), 1.4, 7.4, { ph: true, mass: 300 }));
+  } else if (o.brain === 'side') {
+    add(P_rng('B:battery', 'battery', hw + 0.5, hw + 1.7, -2.5, 2.5, 2.0, 5.2));
+    add(P_rng('B:brain', 'brain', hw + 1.7, hw + 4.1, -4.5, 4.5, 1.4, 7.4));
+  } else if (o.brain === 'back') {
+    add(P_rng('B:battery', 'battery', -2.5, 2.5, -(hl + 1.7), -(hl + 0.5), 2.0, 5.2));
+    add(P_rng('B:brain', 'brain', -4.5, 4.5, -(hl + 4.1), -(hl + 1.7), 1.4, 7.4));
+  } else {
+    add(P_rng('B:battery', 'battery', -1.6, 1.6, -8.5, -3.5, ZTOP, ZTOP + 1.2));
+    add(P_rng('B:brain', 'brain', -3.0, 3.0, -9.5, -0.7, ZTOP + 1.2, ZTOP + 3.6));
+  }
+  return finishMod(P, d, 'brain', false);
+}
+
+/* ---------- 직접 추가한 부품 ---------- */
+function buildCustom(d) {
+  const out = [];
+  for (const id of Object.keys(d.added || {})) {
+    const a = d.added[id];
+    if (!a || !a.c || !a.s) continue;
+    const def = ADDABLE.find(x => x.kind === a.kind) || ADDABLE[ADDABLE.length - 1];
+    let p;
+    if (def.cyl) p = P_cyl('C:' + id, a.kind, a.c.slice(), 'x', Math.max(0.2, a.s[1] / 2), Math.max(0.25, a.s[0]));
+    else p = P_box('C:' + id, a.kind, a.c.slice(), a.s.map(v => Math.max(0.25, v)));
+    p.group = 'custom'; p.mod = null; p.cid = id; p.name = a.name || KIND[a.kind].name;
+    p.ph = a.kind === 'cBox';
+    if (def.mass) p.mass = def.mass;
+    out.push(p);
+  }
+  return out;
+}
+
+/* ---------- 조립 ---------- */
+function unitOfPart(p) {
+  if (!p) return null;
+  if (p.mod) return { type: 'mod', mod: p.mod, id: 'mod:' + p.mod };
+  if (p.group === 'custom') return { type: 'custom', cid: p.cid, id: 'c:' + p.cid };
+  return { type: 'drive', key: p.key, id: 'd:' + p.key };
+}
+function partInUnit(p, u) {
+  if (!u) return false;
+  if (u.type === 'mod') return p.mod === u.mod;
+  if (u.type === 'custom') return p.cid === u.cid;
+  return p.key === u.key;
+}
+function buildRobot(design, drag) {
+  const d = normDesign(design);
+  const T = orientT(d);
+  const parts = [], hidden = [];
+  buildDrive(d, T, parts, hidden);
+  parts.push(...buildLauncher(d, T), ...buildIntake(d, T), ...buildBrain(d, T), ...buildCustom(d));
+  if (drag && drag.unit && (drag.delta[0] || drag.delta[1] || drag.delta[2])) {
+    for (const p of parts) if (partInUnit(p, drag.unit)) shiftPart(p, drag.delta);
+  }
+  for (const p of parts) { p.mass = massFor(p); p.bb = aabb(p); }
+  return { parts, hidden, T, design: d, byKey: new Map(parts.map(p => [p.key, p])) };
+}
+
+/* ---------- 이름 ---------- */
+function faceWord(face, T) {
+  if (face !== 'A' && face !== 'B') return '';
+  if (T.decided) return face === T.top ? '윗면' : '밑면';
+  return face + '면';
+}
+function partName(p, T) {
+  if (!p) return '';
+  if (p.group === 'custom') return p.name || KIND[p.kind].name;
+  const base = (KIND[p.kind] && KIND[p.kind].name) || p.kind;
+  if (p.group !== 'drive') {
+    if (['slingFrame', 'pivotTower', 'liftTower', 'intakeArm', 'finger', 'guide', 'stopPost', 'leg'].includes(p.kind))
+      return base + (p.c[0] < 0 ? ' (왼쪽)' : ' (오른쪽)');
+    return base;
+  }
+  const t = p.tags || {}, bits = [];
+  if (t.row === 'M1' || t.row === 'M2') {
+    if (T.decided) bits.push(p.c[1] >= 0 ? '가운데 앞줄' : '가운데 뒷줄');
+    else bits.push('가운데 ' + (t.row === 'M1' ? '1' : '2') + '줄');
+  } else if (t.end) {
+    if (T.decided) bits.push(p.c[1] > 0 ? '앞' : '뒤');
+    else bits.push('끝' + t.end);
+  }
+  if (t.side) {
+    if (T.decided) bits.push(p.c[0] < 0 ? '왼쪽' : '오른쪽');
+    else bits.push(t.side === 'L' ? '왼쪽' : '오른쪽');
+  }
+  const f = faceWord(t.face, T);
+  if (f && p.kind !== 'centerBeam') bits.unshift(f);
+  if (p.kind === 'centerBeam' && f) bits.push(f);
+  return bits.length ? `${base} (${bits.join(' · ')})` : base;
+}
+function unitName(u, robot) {
+  if (!u) return '';
+  if (u.type === 'mod') return MODS[u.mod].label;
+  if (u.type === 'custom') { const p = robot.parts.find(q => q.cid === u.cid); return p ? p.name : '추가한 부품'; }
+  const p = robot.byKey.get(u.key);
+  if (p) return partName(p, robot.T);
+  const h = robot.hidden.find(x => x.key === u.key);
+  return h ? partName(Object.assign({ c: [0, 0, 0], group: 'drive' }, h), robot.T) : u.key;
+}
+
+/* ---------- 말로 된 방향 ---------- */
+const fmtN = n => { const v = Math.round(n * 10) / 10; return Number.isInteger(v) ? String(v) : v.toFixed(1); };
+function vecWords(v) {
+  const w = [];
+  if (v[1]) w.push((v[1] > 0 ? '앞 ' : '뒤 ') + fmtN(Math.abs(v[1])) + '칸');
+  if (v[0]) w.push((v[0] > 0 ? '오른쪽 ' : '왼쪽 ') + fmtN(Math.abs(v[0])) + '칸');
+  if (v[2]) w.push((v[2] > 0 ? '위 ' : '아래 ') + fmtN(Math.abs(v[2])) + '칸');
+  return w.join(' · ') || '제자리';
+}
+const inch = k => fmtN(k * IN_PER);
+const mm = k => Math.round(k * MM_PER);
+
+/* =========================================================
+   자동 검사: 겹침 · 무게중심 · 시작 크기 · 옵션 조합 · 바닥
+   ========================================================= */
+function rectYZ(p, eps) {
+  const t = (p.rx || 0) * Math.PI / 180;
+  return { u: [Math.cos(t), Math.sin(t)], v: [-Math.sin(t), Math.cos(t)],
+    hy: Math.max(0, p.s[1] / 2 - eps), hz: Math.max(0, p.s[2] / 2 - eps) };
+}
+/* 모든 회전이 x축 기준이라 x 구간 + y-z 평면 사각형 겹침으로 충분하다 */
+function obbOverlap(a, b, eps) {
+  eps = eps == null ? 0.03 : eps;
+  if (Math.abs(a.c[0] - b.c[0]) >= (a.s[0] / 2 - eps) + (b.s[0] / 2 - eps)) return false;
+  const ra = rectYZ(a, eps), rb = rectYZ(b, eps);
+  const dy = b.c[1] - a.c[1], dz = b.c[2] - a.c[2];
+  for (const ax of [ra.u, ra.v, rb.u, rb.v]) {
+    const d = Math.abs(dy * ax[0] + dz * ax[1]);
+    const pa = ra.hy * Math.abs(ra.u[0] * ax[0] + ra.u[1] * ax[1]) + ra.hz * Math.abs(ra.v[0] * ax[0] + ra.v[1] * ax[1]);
+    const pb = rb.hy * Math.abs(rb.u[0] * ax[0] + rb.u[1] * ax[1]) + rb.hz * Math.abs(rb.v[0] * ax[0] + rb.v[1] * ax[1]);
+    if (d >= pa + pb) return false;
+  }
+  return true;
+}
+function bbOverlap(a, b) {
+  for (let i = 0; i < 3; i++) if (a.max[i] <= b.min[i] || b.max[i] <= a.min[i]) return false;
+  return true;
+}
+
+const COMBOS = [
+  { id: 'conv1', level: 'warn', when: o => o.intake === 'conveyor',
+    title: '컨베이어: 빈백 2개를 한꺼번에 가질 위험',
+    detail: '벨트 위에 빈백이 2개 이상 올라가면 "한 번에 1개" 규칙(SG6) 위반이에요. 입구에서 하나만 들어오게 막는 장치가 필요해요.' },
+  { id: 'claw2', level: 'warn', when: o => o.intake === 'claw' && ['sling_back', 'sling_down', 'catapult'].includes(o.launch),
+    title: '집게 → 발사부로 옮기는 동작이 하나 더 필요',
+    detail: '집게로 잡은 빈백을 포켓이나 컵까지 옮겨 줄 회전 동작이 필요해요. 그만큼 느려지고 모터도 더 써요.' },
+  { id: 'catBand', level: 'warn', when: o => o.launch === 'catapult' && o.bands >= 6,
+    title: '투석기에 고무줄이 많아요',
+    detail: '고무줄이 많으면 팔이 멈춤대에 세게 부딪혀 부품이 휘거나 빠질 수 있어요. 멈춤대에 고무 같은 완충재를 붙이거나 고무줄을 줄여요.' },
+  { id: 'slipBand', level: 'warn', when: o => SLING(o.launch) && o.pull === 'slip' && o.bands >= 6,
+    title: '슬립기어 + 고무줄 많음',
+    detail: '고무줄 힘이 세면 슬립기어 이빨이 미끄러지거나 모터가 멈출 수 있어요. 고무줄을 줄이거나 다른 당기는 장치를 써요.' },
+  { id: 'brainTop', level: 'warn', when: o => o.brain === 'top' && !!o.launch,
+    title: '브레인을 위에 두면 발사부와 자리를 다퉈요',
+    detail: '발사부가 쓰는 윗면을 브레인이 차지하고, 무게중심도 높아져요. 옆면이나 뒤쪽을 먼저 검토해 보세요.' },
+  { id: 'brainBack', level: 'warn', when: o => o.brain === 'back' && o.dir === 'back' && o.launch && o.launch !== 'lift',
+    title: '뒤로 쏘는데 브레인이 뒤에 있어요',
+    detail: '날아가는 빈백이나 튕기는 고무줄이 브레인에 걸릴 수 있어요. 브레인을 옆면으로 옮기거나 앞으로 쏘게 바꿔요.' },
+  { id: 'downFlat', level: 'info', when: o => o.launch === 'sling_down' && o.rail < 55,
+    title: '아래로 당기는데 레일이 눕혀져 있어요',
+    detail: '이 각도면 "뒤로 당김"에 가까워요. 아래로 당기는 새총은 보통 55° 이상으로 세워요.' },
+  { id: 'backSteep', level: 'info', when: o => o.launch === 'sling_back' && o.rail > 65,
+    title: '뒤로 당기는데 레일이 많이 서 있어요',
+    detail: '높이는 올라가지만 거리가 짧아져요. 가장 멀리 가는 각도는 약 45°예요.' },
+  { id: 'roller1', level: 'info', when: o => o.intake === 'roller' && o.launch && o.launch !== 'lift',
+    title: '롤러는 포켓이 차면 멈춰야 해요',
+    detail: '포켓에 빈백이 있는데 롤러가 하나 더 빨아들이면 규칙 위반(한 번에 1개)이에요. 포켓이 차면 롤러를 멈추게 코드를 짜요.' },
+  { id: 'liftRoller', level: 'info', when: o => o.launch === 'lift' && o.intake === 'roller',
+    title: '롤러 → 리프트 받침으로 넘겨 줄 길이 필요해요',
+    detail: '롤러로 빨아들인 빈백이 리프트 받침 위로 올라가도록 경사판이 필요해요.' },
+];
+
+function analyze(robot) {
+  const d = robot.design, o = d.opts, T = robot.T;
+  const solid = robot.parts.filter(p => !p.ghost && !p.bag);
+  const W = [];
+  const bb = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
+  for (const p of solid) for (let i = 0; i < 3; i++) { bb.min[i] = Math.min(bb.min[i], p.bb.min[i]); bb.max[i] = Math.max(bb.max[i], p.bb.max[i]); }
+  const dims = { w: bb.max[0] - bb.min[0], l: bb.max[1] - bb.min[1], h: bb.max[2] - Math.min(0, bb.min[2]) };
+  const short = Math.min(dims.w, dims.l), long = Math.max(dims.w, dims.l);
+
+  // 무게·무게중심
+  let M = 0; const s = [0, 0, 0];
+  for (const p of solid) { const m = p.mass || 0; M += m; for (let i = 0; i < 3; i++) s[i] += m * p.c[i]; }
+  const com = M > 0 ? s.map(v => v / M) : [0, 0, 0];
+
+  // 바퀴 접지
+  const wheels = solid.filter(p => p.kind === 'omni' || p.kind === 'cWheel');
+  const bottoms = wheels.map(p => p.c[2] - (p.r || p.s[2] / 2));
+  const lowB = bottoms.length ? Math.min(...bottoms) : 0;
+  const touching = wheels.filter((p, i) => bottoms[i] <= lowB + 0.25);
+  let sup = null, ratio = null;
+  if (touching.length >= 3) {
+    const xs = touching.map(p => p.c[0]), ys = touching.map(p => p.c[1]);
+    sup = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+    const hx = (sup.x1 - sup.x0) / 2, hy = (sup.y1 - sup.y0) / 2;
+    const cx = (sup.x0 + sup.x1) / 2, cy = (sup.y0 + sup.y1) / 2;
+    const dx = com[0] - cx, dy = com[1] - cy;
+    ratio = { x: hx > 0 ? dx / hx : 0, y: hy > 0 ? dy / hy : 0, dx, dy, hx, hy };
+    const minArm = Math.min(hx - Math.abs(dx), hy - Math.abs(dy));
+    const zc = Math.max(0.5, com[2] - lowB);
+    ratio.tip = minArm > 0 ? Math.atan2(minArm, zc) * 180 / Math.PI : 0;
+  }
+
+  // 겹침
+  const col = solid.filter(p => p.collide !== false && p.shape !== 'line');
+  const groups = new Map(), bad = new Set();
+  for (let i = 0; i < col.length; i++) for (let j = i + 1; j < col.length; j++) {
+    const a = col[i], b = col[j];
+    if (a.mod && a.mod === b.mod) continue;
+    if (!bbOverlap(a.bb, b.bb) || !obbOverlap(a, b)) continue;
+    const la = a.mod ? MODS[a.mod].label : partName(a, T), lb = b.mod ? MODS[b.mod].label : partName(b, T);
+    const key = [la, lb].sort().join('|');
+    if (!groups.has(key)) groups.set(key, { la, lb, parts: [], keys: new Set(), ph: true });
+    const g = groups.get(key);
+    if (!a.ph && !b.ph) g.ph = false;
+    g.parts.push([partName(a, T), partName(b, T)]);
+    g.keys.add(a.key); g.keys.add(b.key); if (!a.ph && !b.ph) { bad.add(a.key); bad.add(b.key); }
+  }
+  for (const g of groups.values()) {
+    const ex = g.parts.slice(0, 3).map(([x, y]) => (x === g.la && y === g.lb) ? null : `${x} ↔ ${y}`).filter(Boolean);
+    if (g.ph) W.push({ id: 'ov:' + g.la + g.lb, level: 'warn', title: `자리 겹침: ${g.la} ↔ ${g.lb}`,
+      detail: '아직 정하지 않은 부품의 임시 상자와 겹쳐요. 그 부품을 고르면 실제로 겹치는지 다시 확인할 수 있어요.', keys: [...g.keys] });
+    else W.push({ id: 'ov:' + g.la + g.lb, level: 'danger', title: `겹침: ${g.la} ↔ ${g.lb}`,
+      detail: (ex.length ? ex.join(', ') + '. ' : '') + '같은 자리에 두 부품이 있을 수 없어요. 한쪽을 칸 단위로 옮기거나 옵션을 바꿔 보세요.',
+      keys: [...g.keys] });
+  }
+
+  // 시작 크기
+  const over = [];
+  if (short > LIM.w + 1e-6) over.push(`폭 ${inch(short)}in (11in까지)`);
+  if (long > LIM.l + 1e-6) over.push(`길이 ${inch(long)}in (20in까지)`);
+  if (dims.h > LIM.h + 1e-6) over.push(`높이 ${inch(dims.h)}in (15in까지)`);
+  if (over.length) W.push({ id: 'size', level: 'danger', title: '시작 크기 초과: ' + over.join(', '),
+    detail: '경기 시작 때 폭 11 × 길이 20 × 높이 15in 상자 안에 들어가야 해요. 접어 두었다가 시작 후 펼치는 구조(길이 24in까지, 높이는 제한 없음)를 생각해 보세요.', tool: 'startBox' });
+
+  // 무게중심
+  if (ratio) {
+    const rx = Math.abs(ratio.x), ry = Math.abs(ratio.y);
+    if (rx >= 1 || ry >= 1) {
+      W.push({ id: 'comOut', level: 'danger', title: '무게중심이 바퀴 밖으로 나갔어요',
+        detail: '이대로면 로봇이 넘어져요. 무거운 부품(브레인·배터리·모터)을 바퀴 안쪽으로 옮겨 주세요.', com: true });
+    } else {
+      if (rx >= 0.4) W.push({ id: 'comX', level: rx >= 0.7 ? 'danger' : 'warn',
+        title: `무게중심이 ${ratio.x > 0 ? '오른쪽' : '왼쪽'}으로 쏠렸어요 (바퀴 폭의 ${Math.round(rx * 100)}%)`,
+        detail: '돌 때 한쪽으로 끌리고, 옆에서 부딪히면 넘어지기 쉬워요. 무거운 부품을 반대쪽이나 가운데로 옮겨 보세요.', com: true });
+      if (ry >= 0.45) W.push({ id: 'comY', level: ry >= 0.75 ? 'danger' : 'warn',
+        title: `무게중심이 ${ratio.y > 0 ? '앞' : '뒤'}쪽으로 쏠렸어요 (바퀴 사이 거리의 ${Math.round(ry * 100)}%)`,
+        detail: ratio.y > 0 ? '급하게 멈추거나 빈백을 들 때 앞으로 넘어질 수 있어요. 무거운 부품을 뒤쪽으로 옮겨 보세요.'
+          : '급하게 출발할 때 앞바퀴가 뜨거나 뒤로 넘어질 수 있어요. 무거운 부품을 앞쪽으로 옮겨 보세요.', com: true });
+      if (ratio.tip < 30) W.push({ id: 'comZ', level: 'warn', title: '무게중심이 높아요',
+        detail: `무게중심 높이 ${inch(com[2])}in. 급정지나 충돌 때 넘어지기 쉬워요. 무거운 부품을 낮게 달아 보세요.`, com: true });
+    }
+  }
+
+  // 바닥
+  const under = solid.filter(p => p.bb.min[2] < -0.05);
+  if (under.length) W.push({ id: 'under', level: 'danger', title: '바닥 아래로 내려간 부품이 있어요',
+    detail: under.slice(0, 4).map(p => partName(p, T)).join(', ') + '. 위로 올려 주세요.', keys: under.map(p => p.key) });
+  const drag = solid.filter(p => p.bb.min[2] >= -0.05 && p.bb.min[2] < lowB + 0.15 && !(p.kind === 'omni' || p.kind === 'cWheel'));
+  if (drag.length) W.push({ id: 'drag', level: 'warn', title: '바닥에 끌릴 수 있는 부품이 있어요',
+    detail: drag.slice(0, 4).map(p => partName(p, T)).join(', ') + '. 바퀴보다 조금 높게 올려 주세요.', keys: drag.map(p => p.key) });
+  const air = wheels.filter((p, i) => bottoms[i] > lowB + 0.25);
+  if (air.length) W.push({ id: 'air', level: 'warn', title: `바닥에 안 닿는 바퀴가 ${air.length}개 있어요`,
+    detail: air.map(p => partName(p, T)).join(', ') + '. 바퀴 높이를 다른 바퀴와 맞춰 주세요.', keys: air.map(p => p.key) });
+
+  // 옵션 조합
+  for (const c of COMBOS) if (c.when(o)) W.push({ id: c.id, level: c.level, title: c.title, detail: c.detail, combo: true });
+
+  // 앞·위
+  if (!T.decided) W.push({ id: 'orient', level: 'info', title: '앞·위를 아직 안 정했어요',
+    detail: '임시로 A면을 위로, 끝 1을 앞으로 놓고 그렸어요. 조합 탭 첫 단계에서 정할 수 있어요.', go: 'orient' });
+
+  const order = { danger: 0, warn: 1, info: 2 };
+  W.sort((a, b) => order[a.level] - order[b.level]);
+  return { warnings: W, bad, bb, dims, short, long, M, com, sup, ratio,
+    nDanger: W.filter(w => w.level === 'danger').length, nWarn: W.filter(w => w.level === 'warn').length };
+}
+
+/* =========================================================
+   3D 보기 (three.js r128) — 확인용
+   로봇 좌표 (x, y, z) → three 좌표 (x, z, -y)
+   ========================================================= */
+const V3 = { ok: false, need: false, cam: { th: 0.62, ph: 1.06, r: 60, tgt: [0, 0, 4] }, anim: null };
+const MODCOL = { launcher: 0xe2702a, intake: 0x23946a, brain: 0x7457ea, custom: 0x5a7aa3 };
+const t3 = v => new THREE.Vector3(v[0], v[2], -v[1]);
+
+function init3D() {
+  const cv = els.cv;
+  if (!window.THREE) return no3D('3D 그림 도구를 불러오지 못했어요. 인터넷 연결을 확인하거나 2D 도면을 써 주세요.');
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true }); }
+  catch (e) { return no3D('이 기기에서는 3D를 그릴 수 없어요. 2D 도면을 써 주세요.'); }
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.5, 3000);
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x7d8896, 0.62);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.58);
+  sun.position.set(22, 46, 30); sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, { left: -34, right: 34, top: 34, bottom: -34, near: 1, far: 140 });
+  sun.shadow.bias = -0.0008;
+  scene.add(sun); scene.add(sun.target);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.ShadowMaterial({ opacity: 0.16 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+  const root = new THREE.Group(); scene.add(root);
+  const over = new THREE.Group(); scene.add(over);
+  Object.assign(V3, { ok: true, renderer, scene, camera, hemi, sun, floor, root, over, grids: null,
+    ray: new THREE.Raycaster(), mats: makeMaterials(renderer) });
+  applyTheme3D();
+  bind3D();
+  new ResizeObserver(() => { resize3D(); }).observe(els.pane3d);
+  resize3D();
+}
+function no3D(msg) {
+  V3.ok = false;
+  const d = document.createElement('div'); d.className = 'nogl'; d.textContent = msg;
+  els.pane3d.appendChild(d);
+  els.cv.style.display = 'none';
+}
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || '#888'; }
+function applyTheme3D() {
+  if (!V3.ok) return;
+  V3.scene.background = new THREE.Color(cssVar('--scene-bg'));
+  if (V3.grids) { V3.grids.forEach(g => { V3.scene.remove(g); g.geometry.dispose(); g.material.dispose(); }); }
+  const g1 = new THREE.GridHelper(80, 80, cssVar('--scene-grid'), cssVar('--scene-grid'));
+  const g2 = new THREE.GridHelper(80, 16, cssVar('--scene-grid-major'), cssVar('--scene-grid-major'));
+  g1.position.y = 0.004; g2.position.y = 0.006;
+  V3.scene.add(g1); V3.scene.add(g2); V3.grids = [g1, g2];
+  V3.inkColor = new THREE.Color(cssVar('--ink'));
+  request3D();
+}
+
+/* ---------- 재질 ---------- */
+function holeTexture(renderer, bg, ring, hole, r1, r2) {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = bg; g.fillRect(0, 0, 64, 64);
+  g.fillStyle = ring; g.beginPath(); g.arc(32, 32, r1, 0, Math.PI * 2); g.fill();
+  g.fillStyle = hole; g.beginPath(); g.arc(32, 32, r2, 0, Math.PI * 2); g.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  return t;
+}
+function makeMaterials(renderer) {
+  const std = o => new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.6, metalness: 0.02 }, o));
+  const M = {
+    beam: std({ map: holeTexture(renderer, '#a9afb7', '#9aa1a9', '#4b525a', 21, 15) }),
+    conn: std({ map: holeTexture(renderer, '#f3f4f6', '#e2e5e9', '#2d8ee0', 15, 9), roughness: 0.5 }),
+    motor: std({ color: 0xcfd3d8, roughness: 0.5 }),
+    cap: std({ color: 0x5e646c, roughness: 0.6 }),
+    hub: std({ color: 0x9aa1a8, roughness: 0.45 }),
+    roller: std({ color: 0x24272b, roughness: 0.85 }),
+    metal: std({ color: 0x8a9199, roughness: 0.35, metalness: 0.55 }),
+    collar: std({ color: 0x3a3e44, roughness: 0.7 }),
+    band: std({ color: 0xc7903a, roughness: 0.85 }),
+    bag: std({ color: 0xefc12b, roughness: 0.95 }),
+    string: new THREE.MeshBasicMaterial({ color: 0x2c3036 }),
+    mod: {}, edge: {}, sel: null,
+  };
+  for (const [k, col] of Object.entries(MODCOL)) {
+    M.mod[k] = std({ color: col, transparent: true, opacity: 0.46, depthWrite: false, roughness: 0.7 });
+    M.edge[k] = new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.95 });
+  }
+  M.dash = {};
+  for (const [k, col] of Object.entries(MODCOL)) M.dash[k] = new THREE.LineDashedMaterial({ color: col, dashSize: 0.6, gapSize: 0.4 });
+  return M;
+}
+function scaleBoxUV(geo, sx, sy, sz) {
+  const uv = geo.attributes.uv, f = [[sy, sz], [sy, sz], [sx, sy], [sx, sy], [sx, sz], [sx, sz]];
+  for (let face = 0; face < 6; face++) for (let i = 0; i < 4; i++) {
+    const k = face * 4 + i; uv.setXY(k, uv.getX(k) * f[face][0], uv.getY(k) * f[face][1]);
+  }
+  uv.needsUpdate = true;
+}
+
+/* ---------- 부품 → 메시 ---------- */
+function place(obj, p) {
+  obj.position.copy(t3(p.c));
+  obj.rotation.x = (p.rx || 0) * Math.PI / 180;
+  return obj;
+}
+function tagAll(obj, key, noPick) { obj.traverse(o => { o.userData.key = key; if (noPick) o.userData.noPick = true; }); return obj; }
+function boxGeo(s, uv) { const g = new THREE.BoxGeometry(s[0], s[2], s[1]); if (uv) scaleBoxUV(g, s[0], s[1], s[2]); return g; }
+function cylGeo(p, seg) {
+  const g = new THREE.CylinderGeometry(p.r, p.r, p.len, seg || 28);
+  if (p.axis === 'x') g.rotateZ(Math.PI / 2); else if (p.axis === 'y') g.rotateX(Math.PI / 2);
+  return g;
+}
+function withEdges(mesh, mat) {
+  const e = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 20), mat);
+  mesh.add(e); return mesh;
+}
+function wheelMesh(p, M) {
+  const g = new THREE.Group();
+  const R = p.r, w = p.len;
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.66, R * 0.66, w * 0.92, 28).rotateZ(Math.PI / 2), M.hub);
+  hub.castShadow = true; g.add(hub);
+  const rr = Math.max(0.18, R * 0.17), rl = Math.max(0.4, R * 0.42);
+  const rg = new THREE.CylinderGeometry(rr, rr, rl, 12);
+  for (let row = 0; row < 2; row++) for (let k = 0; k < 8; k++) {
+    const a = (k + row * 0.5) / 8 * Math.PI * 2;
+    const m = new THREE.Mesh(rg, M.roller);
+    m.position.set((row ? 1 : -1) * w * 0.22, (R - rr) * Math.cos(a), (R - rr) * Math.sin(a));
+    m.rotation.x = a + Math.PI / 2;
+    m.castShadow = true; g.add(m);
+  }
+  return place(g, p);
+}
+function motorMesh(p, M, ghostMod) {
+  const g = new THREE.Group();
+  if (ghostMod) {
+    const m = new THREE.Mesh(boxGeo(p.s), M.mod[ghostMod]);
+    withEdges(m, M.edge[ghostMod]); g.add(m);
+    return place(g, p);
+  }
+  const cap = Math.min(0.45, p.s[1] * 0.12);
+  const body = new THREE.Mesh(boxGeo([p.s[0], p.s[1] - cap * 2, p.s[2]]), M.motor);
+  body.castShadow = true; body.receiveShadow = true; g.add(body);
+  for (const s of [-1, 1]) {
+    const c = new THREE.Mesh(boxGeo([p.s[0] + 0.04, cap, p.s[2] + 0.04]), M.cap);
+    c.position.z = -s * (p.s[1] / 2 - cap / 2); c.castShadow = true; g.add(c);
+  }
+  return place(g, p);
+}
+function lineMesh(p, mat) {
+  const a = t3(p.a), b = t3(p.b), len = a.distanceTo(b);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(p.w, p.w, Math.max(0.01, len), 6), mat);
+  m.position.copy(a.clone().add(b).multiplyScalar(0.5));
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+  return m;
+}
+function meshFor(p, M) {
+  const vis = (KIND[p.kind] && KIND[p.kind].vis) || 'beam';
+  const ghostMod = p.mod || (p.group === 'custom' && p.ph ? 'custom' : null);
+  let obj;
+  if (p.shape === 'line') obj = lineMesh(p, p.kind === 'band' ? M.band : M.string);
+  else if (p.bag) { obj = place(new THREE.Mesh(boxGeo(p.s), M.bag), p); obj.castShadow = true; }
+  else if (p.ghost) {
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(boxGeo(p.s)), M.dash[p.mod || 'custom']);
+    e.computeLineDistances(); obj = place(e, p);
+  } else if (ghostMod) {
+    if (vis === 'motor') obj = motorMesh(p, M, ghostMod);
+    else {
+      const geo = p.shape === 'cyl' ? cylGeo(p) : boxGeo(p.s);
+      const m = new THREE.Mesh(geo, M.mod[ghostMod]);
+      if (p.ph) {
+        const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), M.dash[ghostMod]);
+        e.computeLineDistances(); m.add(e);
+      } else withEdges(m, M.edge[ghostMod]);
+      obj = place(m, p);
+    }
+  } else if (p.kind === 'omni' || p.kind === 'cWheel') obj = wheelMesh(p, M);
+  else if (vis === 'motor') obj = motorMesh(p, M);
+  else if (p.shape === 'cyl') { obj = place(new THREE.Mesh(cylGeo(p), p.kind === 'collar' ? M.collar : M.metal), p); obj.castShadow = true; }
+  else {
+    const mat = vis === 'conn' ? M.conn : vis === 'shaft' ? M.metal : M.beam;
+    obj = place(new THREE.Mesh(boxGeo(p.s, mat.map), mat), p);
+    obj.castShadow = true; obj.receiveShadow = true;
+  }
+  return tagAll(obj, p.key, p.ghost);
+}
+function disposeTree(g) {
+  g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  while (g.children.length) g.remove(g.children[0]);
+}
+function fillRobotGroup(group, robot) {
+  disposeTree(group);
+  for (const p of robot.parts) group.add(meshFor(p, V3.mats));
+}
+
+/* ---------- 겹쳐 그리기: 선택·겹침·무게중심·시작 상자·앞 화살표 ---------- */
+function outlineFor(p, color, opacity) {
+  const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: opacity || 1, depthTest: false });
+  let geo;
+  if (p.shape === 'line') {
+    const a = t3(p.a), b = t3(p.b);
+    geo = new THREE.BufferGeometry().setFromPoints([a, b]);
+    const l = new THREE.Line(geo, mat); l.renderOrder = 10; return l;
+  }
+  geo = new THREE.EdgesGeometry(boxGeo([p.s[0] + 0.25, p.s[1] + 0.25, p.s[2] + 0.25]));
+  const e = new THREE.LineSegments(geo, mat); e.renderOrder = 10;
+  return place(e, p);
+}
+function update3D() {
+  if (!V3.ok) return;
+  const R = CUR.robot, A = CUR.an;
+  if (V3.lastRobot !== R) { fillRobotGroup(V3.root, R); V3.lastRobot = R; }
+  const over = V3.over;
+  over.children.forEach(o => { if (o.geometry) o.geometry.dispose(); if (o.material && !o.material.shared) o.material.dispose && o.material.dispose(); });
+  disposeTree(over);
+  const ink = V3.inkColor || new THREE.Color(0x222222);
+  // 선택
+  const u = selUnit();
+  if (u) for (const p of R.parts) if (partInUnit(p, u)) over.add(outlineFor(p, 0x1b6dd0));
+  // 다른 사람이 고른 부품
+  for (const pr of peerSelections()) for (const p of R.parts) if (p.key === pr.key) over.add(outlineFor(p, new THREE.Color(pr.color || '#7a7a7a'), 0.9));
+  // 겹침
+  for (const k of A.bad) { const p = R.byKey.get(k); if (p) over.add(outlineFor(p, 0xd23b3b)); }
+  // 무게중심
+  const com = t3(A.com);
+  const ballMat = new THREE.MeshBasicMaterial({ color: ink, depthTest: false });
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 12), ballMat); ball.position.copy(com); ball.renderOrder = 11; over.add(ball);
+  const lmat = new THREE.LineDashedMaterial({ color: ink, dashSize: 0.4, gapSize: 0.3, depthTest: false });
+  const drop = new THREE.Line(new THREE.BufferGeometry().setFromPoints([com, new THREE.Vector3(com.x, 0.02, com.z)]), lmat);
+  drop.computeLineDistances(); drop.renderOrder = 11; over.add(drop);
+  if (A.sup) {
+    const s = A.sup, pts = [[s.x0, s.y0], [s.x1, s.y0], [s.x1, s.y1], [s.x0, s.y1], [s.x0, s.y0]].map(q => new THREE.Vector3(q[0], 0.03, -q[1]));
+    const sl = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color: ink, dashSize: 0.5, gapSize: 0.4, transparent: true, opacity: 0.55 }));
+    sl.computeLineDistances(); over.add(sl);
+  }
+  // 시작 크기 상자
+  if (S.prefs.startBox) {
+    const cx = (A.bb.min[0] + A.bb.max[0]) / 2, cy = (A.bb.min[1] + A.bb.max[1]) / 2;
+    const wide = A.bb.max[0] - A.bb.min[0] > A.bb.max[1] - A.bb.min[1];
+    const geo = new THREE.EdgesGeometry(new THREE.BoxGeometry(wide ? LIM.l : LIM.w, LIM.h, wide ? LIM.w : LIM.l));
+    const bx = new THREE.LineSegments(geo, new THREE.LineDashedMaterial({ color: A.warnings.some(w => w.id === 'size') ? 0xd23b3b : 0x1b6dd0, dashSize: 0.8, gapSize: 0.5 }));
+    bx.computeLineDistances(); bx.position.set(cx, LIM.h / 2, -cy); over.add(bx);
+  }
+  // 앞 화살표 (바닥)
+  const fy = A.bb.max[1] + 2.2;
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.5, 0); shape.lineTo(0.5, 0); shape.lineTo(0.5, 1.6); shape.lineTo(1.4, 1.6); shape.lineTo(0, 3.2); shape.lineTo(-1.4, 1.6); shape.lineTo(-0.5, 1.6); shape.closePath();
+  const arrow = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: ink, transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+  arrow.rotation.x = -Math.PI / 2; arrow.position.set(0, 0.02, -fy); over.add(arrow);
+  V3.anchors = { front: [0, fy + 3.6, 0], com: A.com };
+  request3D();
+}
+
+/* ---------- 카메라 ---------- */
+function camPose(c) {
+  const sp = Math.sin(c.ph);
+  return [c.tgt[0] + c.r * sp * Math.sin(c.th), c.tgt[1] + c.r * sp * Math.cos(c.th), c.tgt[2] + c.r * Math.cos(c.ph)];
+}
+function fitR(bb, th, ph, aspect) {
+  const c = [(bb.min[0] + bb.max[0]) / 2, (bb.min[1] + bb.max[1]) / 2, (bb.min[2] + bb.max[2]) / 2];
+  const sp = Math.sin(ph), cp = Math.cos(ph);
+  const fwd = [sp * Math.sin(th), sp * Math.cos(th), cp], right = [-Math.cos(th), Math.sin(th), 0];
+  const up = [-cp * Math.sin(th), -cp * Math.cos(th), sp];
+  const ty = Math.tan(16 * Math.PI / 180), tx = ty * Math.max(0.3, aspect);
+  let r = 0;
+  for (const X of [bb.min[0], bb.max[0]]) for (const Y of [bb.min[1], bb.max[1]]) for (const Z of [bb.min[2], bb.max[2]]) {
+    const d = [X - c[0], Y - c[1], Z - c[2]];
+    const x = d[0] * right[0] + d[1] * right[1], y = d[0] * up[0] + d[1] * up[1] + d[2] * up[2], z = d[0] * fwd[0] + d[1] * fwd[1] + d[2] * fwd[2];
+    r = Math.max(r, z + Math.abs(x) / tx, z + Math.abs(y) / ty);
+  }
+  return { tgt: c, r: r * 1.1 + 2 };
+}
+function fitCam(keepAngles, th, ph) {
+  if (!CUR.an) return;
+  const bb = CUR.an.bb;
+  const f = fitR(bb, th == null ? V3.cam.th : th, ph == null ? V3.cam.ph : ph, V3.camera ? V3.camera.aspect : 1);
+  if (keepAngles) { V3.cam.tgt = f.tgt; V3.cam.r = f.r; request3D(); }
+  return f;
+}
+function presetCam(name) {
+  V3.userMoved = true;
+  const P = { iso: [0.62, 1.06], front: [0, 1.32], side: [Math.PI / 2, 1.38], top: [0, 0.03], bottom: [0, Math.PI - 0.04] }[name] || [0.62, 1.06];
+  const f = fitCam(false, P[0], P[1]) || { tgt: V3.cam.tgt, r: V3.cam.r };
+  animCam({ th: P[0], ph: P[1], r: f.r, tgt: f.tgt });
+}
+function animCam(to) {
+  const from = Object.assign({}, V3.cam, { tgt: V3.cam.tgt.slice() });
+  let dth = to.th - from.th; while (dth > Math.PI) dth -= Math.PI * 2; while (dth < -Math.PI) dth += Math.PI * 2;
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const t0 = performance.now(), dur = reduce ? 0 : 320;
+  cancelAnimationFrame(V3.anim);
+  const step = now => {
+    const k = dur ? Math.min(1, (now - t0) / dur) : 1, e = 1 - Math.pow(1 - k, 3);
+    V3.cam.th = from.th + dth * e; V3.cam.ph = from.ph + (to.ph - from.ph) * e; V3.cam.r = from.r + (to.r - from.r) * e;
+    V3.cam.tgt = from.tgt.map((v, i) => v + (to.tgt[i] - v) * e);
+    request3D();
+    if (k < 1) V3.anim = requestAnimationFrame(step);
+  };
+  V3.anim = requestAnimationFrame(step);
+}
+function resize3D() {
+  if (!V3.ok) return;
+  const r = els.pane3d.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2) return;
+  V3.renderer.setSize(r.width, r.height, false);
+  V3.camera.aspect = r.width / r.height; V3.camera.updateProjectionMatrix();
+  if (!V3.userMoved) fitCam(true);
+  request3D();
+}
+function request3D() {
+  if (!V3.ok || V3.need) return;
+  V3.need = true;
+  requestAnimationFrame(frame3D);
+}
+function frame3D() {
+  V3.need = false;
+  if (!V3.ok || els.pane3d.offsetParent === null) return;
+  const c = V3.cam, cam = V3.camera, pos = camPose(c);
+  cam.position.copy(t3(pos));
+  cam.up.set(0, 1, 0);
+  cam.lookAt(t3(c.tgt));
+  V3.renderer.render(V3.scene, cam);
+  drawLabels3D();
+}
+function project(v) {
+  const r = els.pane3d.getBoundingClientRect();
+  const p = t3(v).project(V3.camera);
+  if (p.z > 1 || p.z < -1) return null;
+  return [(p.x + 1) / 2 * r.width, (1 - p.y) / 2 * r.height];
+}
+function drawLabels3D() {
+  const box = els.labels; if (!box) return;
+  const L = [];
+  const T = CUR.robot.T;
+  if (V3.anchors) {
+    const f = project(V3.anchors.front);
+    if (f) L.push({ x: f[0], y: f[1], cls: 'lbl front', txt: T.decided ? '앞' : '끝 1 · 임시 앞', fixed: true });
+  }
+  if (S.prefs.explain) {
+    for (const m of Object.keys(MODS)) {
+      const ps = CUR.robot.parts.filter(p => p.mod === m && !p.ghost && !p.bag);
+      if (!ps.length) continue;
+      let x = 0, y = 0, z = -Infinity;
+      for (const p of ps) { x += p.c[0]; y += p.c[1]; z = Math.max(z, p.bb.max[2]); }
+      const s = project([x / ps.length, y / ps.length, z + 0.8]);
+      if (s) L.push({ x: s[0], y: s[1], cls: 'lbl', m, txt: MODS[m].label + (ps[0].ph ? ' · 미정' : '') });
+    }
+    const c = project(CUR.an.com);
+    if (c) L.push({ x: c[0] + 34, y: c[1] + 9, cls: 'lbl com', txt: '무게중심' });
+  }
+  const placed = [];
+  const rect = l => { const w = l.txt.length * 12 + 16; return [l.x - w / 2, l.y - 22, l.x + w / 2, l.y]; };
+  const hit = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  for (const l of L.sort((a, b) => (b.fixed ? 1 : 0) - (a.fixed ? 1 : 0))) {
+    for (let k = 0; k < 6; k++) {
+      const r = rect(l), o = placed.find(q => hit(r, q));
+      if (!o) break;
+      l.y = o[1] - 3;
+    }
+    placed.push(rect(l));
+  }
+  box.innerHTML = L.map(l => `<span class="${l.cls}"${l.m ? ` data-m="${l.m}"` : ''} style="left:${Math.round(l.x)}px;top:${Math.round(l.y)}px">${l.txt}</span>`).join('');
+}
+
+/* ---------- 손가락·마우스 ---------- */
+function bind3D() {
+  const cv = els.cv, ptr = new Map();
+  let g = null;
+  const pt = e => [e.clientX, e.clientY];
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  cv.addEventListener('pointerdown', e => {
+    cv.setPointerCapture(e.pointerId);
+    ptr.set(e.pointerId, pt(e));
+    cancelAnimationFrame(V3.anim); V3.userMoved = true;
+    if (ptr.size === 1) g = { mode: (e.button === 2 || e.shiftKey) ? 'pan' : 'rot', last: pt(e), start: pt(e), t0: performance.now(), moved: false, single: true };
+    else if (ptr.size === 2) {
+      const [a, b] = [...ptr.values()];
+      g = { mode: 'pinch', d0: Math.hypot(a[0] - b[0], a[1] - b[1]), m0: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], r0: V3.cam.r, moved: true, single: false };
+    }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!ptr.has(e.pointerId) || !g) return;
+    ptr.set(e.pointerId, pt(e));
+    const c = V3.cam;
+    if (g.mode === 'pinch' && ptr.size >= 2) {
+      const [a, b] = [...ptr.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      c.r = clamp(g.r0 * g.d0 / Math.max(10, d), 6, 500);
+      panBy(m[0] - g.m0[0], m[1] - g.m0[1]); g.m0 = m;
+    } else if (ptr.size === 1) {
+      const p = pt(e), dx = p[0] - g.last[0], dy = p[1] - g.last[1];
+      g.last = p;
+      if (Math.hypot(p[0] - g.start[0], p[1] - g.start[1]) > 6) g.moved = true;
+      if (g.mode === 'pan') panBy(dx, dy);
+      else { c.th += dx * 0.009; c.ph = clamp(c.ph - dy * 0.009, 0.03, Math.PI - 0.03); }
+    }
+    request3D();
+  });
+  const end = e => {
+    if (!ptr.has(e.pointerId)) return;
+    const wasTap = g && g.single && !g.moved && performance.now() - g.t0 < 500 && e.type === 'pointerup';
+    ptr.delete(e.pointerId);
+    if (wasTap) pick3D(e);
+    if (ptr.size === 1) { const p = [...ptr.values()][0]; g = { mode: 'rot', last: p, start: p, t0: 0, moved: true, single: false }; }
+    else if (ptr.size === 0) g = null;
+  };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+  cv.addEventListener('wheel', e => {
+    e.preventDefault(); cancelAnimationFrame(V3.anim); V3.userMoved = true;
+    V3.cam.r = clamp(V3.cam.r * Math.exp(e.deltaY * 0.0012), 6, 500); request3D();
+  }, { passive: false });
+  els.camBtns.addEventListener('click', e => { const b = e.target.closest('[data-cam]'); if (b) presetCam(b.dataset.cam); });
+}
+function panBy(dx, dy) {
+  const c = V3.cam, r = els.pane3d.getBoundingClientRect();
+  const k = 2 * c.r * Math.tan(16 * Math.PI / 180) / Math.max(1, r.height);
+  const right = [-Math.cos(c.th), Math.sin(c.th), 0];
+  const fwd = [Math.sin(c.th), Math.cos(c.th), 0];
+  const up = [-Math.cos(c.ph) * fwd[0], -Math.cos(c.ph) * fwd[1], Math.sin(c.ph)];
+  for (let i = 0; i < 3; i++) c.tgt[i] += -dx * k * right[i] + dy * k * up[i];
+}
+function pick3D(e) {
+  const r = els.cv.getBoundingClientRect();
+  const m = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  V3.ray.setFromCamera(m, V3.camera);
+  const hits = V3.ray.intersectObjects(V3.root.children, true).filter(h => h.object.userData.key && !h.object.userData.noPick && h.object.type !== 'LineSegments');
+  selectKey(hits.length ? hits[0].object.userData.key : null, 'view');
+}
+
+/* ---------- 비교용 정지 그림 ---------- */
+let SNAP = null;
+function snapshot3D(robot, an) {
+  if (!V3.ok) return null;
+  try {
+    if (!SNAP) {
+      const c = document.createElement('canvas');
+      const rd = new THREE.WebGLRenderer({ canvas: c, antialias: true, preserveDrawingBuffer: true });
+      rd.setPixelRatio(1); rd.setSize(560, 420, false);
+      const sc = new THREE.Scene();
+      sc.add(new THREE.HemisphereLight(0xffffff, 0x7d8896, 0.66));
+      const sun = new THREE.DirectionalLight(0xffffff, 0.58); sun.position.set(22, 46, 30); sc.add(sun);
+      const cam = new THREE.PerspectiveCamera(32, 4 / 3, 0.5, 3000);
+      const grp = new THREE.Group(); sc.add(grp);
+      SNAP = { rd, sc, cam, grp, grid: null };
+    }
+    SNAP.sc.background = new THREE.Color(cssVar('--scene-bg'));
+    if (SNAP.grid) SNAP.sc.remove(SNAP.grid);
+    SNAP.grid = new THREE.GridHelper(80, 16, cssVar('--scene-grid-major'), cssVar('--scene-grid'));
+    SNAP.sc.add(SNAP.grid);
+    fillRobotGroup(SNAP.grp, robot);
+    const f = fitR(an.bb, 0.62, 1.06, 4 / 3);
+    const c = { th: 0.62, ph: 1.06, r: f.r, tgt: f.tgt };
+    SNAP.cam.position.copy(t3(camPose(c))); SNAP.cam.lookAt(t3(f.tgt));
+    SNAP.rd.render(SNAP.sc, SNAP.cam);
+    const url = SNAP.rd.domElement.toDataURL('image/png');
+    disposeTree(SNAP.grp);
+    return url;
+  } catch (e) { return null; }
+}
+
+/* =========================================================
+   2D 도면 — 편집용 (위에서 본 모습 · 옆에서 본 모습)
+   SVG 단위 = 칸. 위에서: X=x, Y=-y(앞이 위). 옆에서: X=y(앞이 오른쪽), Y=-z
+   ========================================================= */
+const V2 = { drag: null, vb: {} };
+const f2 = n => (Math.round(n * 1000) / 1000);
+function visCls(p) {
+  const vis = (KIND[p.kind] && KIND[p.kind].vis) || 'beam';
+  if (p.bag) return 'k-bag';
+  if (p.kind === 'band') return 'k-band';
+  if (p.kind === 'string') return 'k-string';
+  if (p.ghost) return 'ghost m-' + (p.mod || 'custom');
+  if (p.mod) return 'm-' + p.mod + (p.ph ? ' ph-box' : '');
+  if (p.group === 'custom' && p.ph) return 'm-custom ph-box';
+  return 'k-' + ({ wall: 'wall', beam: 'beam', plate: 'plate', conn: 'conn', motor: 'motor', wheel: 'wheel', shaft: 'shaft' }[vis] || 'beam');
+}
+function partClass(p, ctx) {
+  let c = 'pt ' + visCls(p);
+  if (ctx.sel && partInUnit(p, ctx.sel)) c += ' sel';
+  else if (ctx.bad.has(p.key)) c += ' bad';
+  else if (ctx.peer.has(p.key)) c += ' peer';
+  return c;
+}
+function allBB(R) {
+  const b = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
+  for (const p of R.parts) for (let i = 0; i < 3; i++) { b.min[i] = Math.min(b.min[i], p.bb.min[i]); b.max[i] = Math.max(b.max[i], p.bb.max[i]); }
+  return b;
+}
+function render2D() {
+  if (!CUR.robot || els.pane2d.offsetParent === null) return;
+  const R = CUR.robot, A = CUR.an, bb = allBB(R);
+  const peerMap = new Map(peerSelections().map(x => [x.key, x.color]));
+  const ctx = { sel: selUnit(), bad: A.bad, peer: peerMap };
+  const fs = 1.15;
+  drawTop(R, A, bb, ctx, fs);
+  drawSide(R, A, bb, ctx, fs);
+}
+function gridDefs(id) {
+  return `<defs><pattern id="g1${id}" width="1" height="1" patternUnits="userSpaceOnUse"><path class="gminor" d="M1 0H0V1"/></pattern>` +
+    `<pattern id="g5${id}" width="5" height="5" patternUnits="userSpaceOnUse"><path class="gmajor" d="M5 0H0V5"/></pattern></defs>`;
+}
+function comSym(x, y) {
+  return `<g class="com" transform="translate(${f2(x)} ${f2(y)})"><circle r="0.62"/><path class="q" d="M0 0H0.62A0.62 0.62 0 0 1 0 0.62ZM0 0H-0.62A0.62 0.62 0 0 1 0 -0.62Z"/></g>`;
+}
+function modLabels(R, axisX, axisY, fs) {
+  if (!S.prefs.explain) return '';
+  let s = '';
+  for (const m of Object.keys(MODS)) {
+    const ps = R.parts.filter(p => p.mod === m && !p.ghost && !p.bag);
+    if (!ps.length) continue;
+    const b = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
+    for (const p of ps) for (let i = 0; i < 3; i++) { b.min[i] = Math.min(b.min[i], p.bb.min[i]); b.max[i] = Math.max(b.max[i], p.bb.max[i]); }
+    const x = (b.min[axisX] + b.max[axisX]) / 2, y = (b.min[axisY] + b.max[axisY]) / 2;
+    s += `<text class="mtxt ${m}" x="${f2(x)}" y="${f2(-y)}" font-size="${fs}" text-anchor="middle" dominant-baseline="middle">${MODS[m].label}${ps[0].ph ? ' (미정)' : ''}</text>`;
+  }
+  return s;
+}
+function drawTop(R, A, bb, ctx, fs) {
+  const svg = els.svgTop, m = 2.4;
+  let x0 = bb.min[0] - m, x1 = bb.max[0] + m, y0 = bb.min[1] - m - 1.2, y1 = bb.max[1] + m + 2.4;
+  const cx = (A.bb.min[0] + A.bb.max[0]) / 2, cy = (A.bb.min[1] + A.bb.max[1]) / 2;
+  const wide = A.bb.max[0] - A.bb.min[0] > A.bb.max[1] - A.bb.min[1];
+  const sw = wide ? LIM.l : LIM.w, sl = wide ? LIM.w : LIM.l;
+  if (S.prefs.startBox) { x0 = Math.min(x0, cx - sw / 2 - 1); x1 = Math.max(x1, cx + sw / 2 + 1); y0 = Math.min(y0, cy - sl / 2 - 1); y1 = Math.max(y1, cy + sl / 2 + 2.4); }
+  let vb = [x0, -y1, x1 - x0, y1 - y0];
+  if (V2.drag && V2.vb.top) vb = V2.vb.top; else V2.vb.top = vb;
+  const o = [gridDefs('t'), `<rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="url(#g1t)"/><rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="url(#g5t)"/>`];
+  if (A.sup) o.push(`<rect class="sup" x="${f2(A.sup.x0)}" y="${f2(-A.sup.y1)}" width="${f2(A.sup.x1 - A.sup.x0)}" height="${f2(A.sup.y1 - A.sup.y0)}"/>`);
+  const order = R.parts.slice().sort((a, b) => (a.shape === 'line') - (b.shape === 'line') || a.bb.max[2] - b.bb.max[2]);
+  for (const p of order) {
+    const cls = partClass(p, ctx), st = ctx.peer.has(p.key) && !cls.includes(' sel') ? ` style="stroke:${ctx.peer.get(p.key)}"` : '';
+    if (p.shape === 'line') { o.push(`<line class="${cls}" data-key="${p.key}" x1="${f2(p.a[0])}" y1="${f2(-p.a[1])}" x2="${f2(p.b[0])}" y2="${f2(-p.b[1])}"${st}/>`); continue; }
+    const b = p.bb, vis = (KIND[p.kind] && KIND[p.kind].vis) || '';
+    const rr = vis === 'motor' ? 0.35 : vis === 'wheel' ? 0.6 : p.bag ? 0.8 : 0.1;
+    o.push(`<rect class="${cls}" data-key="${p.key}" x="${f2(b.min[0])}" y="${f2(-b.max[1])}" width="${f2(b.max[0] - b.min[0])}" height="${f2(b.max[1] - b.min[1])}" rx="${rr}"${st}/>`);
+  }
+  if (S.prefs.startBox) o.push(`<rect class="lim" x="${f2(cx - sw / 2)}" y="${f2(-(cy + sl / 2))}" width="${sw}" height="${sl}"/><text class="gtxt" x="${f2(cx - sw / 2 + 0.4)}" y="${f2(-(cy + sl / 2) - 0.5)}" font-size="${fs * 0.85}">시작 크기 11 × 20in</text>`);
+  o.push(comSym(A.com[0], -A.com[1]));
+  o.push(modLabels(R, 0, 1, fs));
+  const T = R.T, fy = bb.max[1] + 0.9;
+  o.push(`<path class="arrow" d="M${-0.9} ${f2(-fy)}L0 ${f2(-fy - 1.4)}L0.9 ${f2(-fy)}Z"/>`);
+  o.push(`<text class="ftxt" x="0" y="${f2(-fy - 1.9)}" font-size="${fs}" text-anchor="middle">${T.decided ? '앞' : '끝 1 · 임시 앞'}</text>`);
+  o.push(`<text class="gtxt" x="0" y="${f2(-(bb.min[1] - 1.6))}" font-size="${fs * 0.9}" text-anchor="middle">${T.decided ? '뒤' : '끝 2'}</text>`);
+  svg.setAttribute('viewBox', vb.map(f2).join(' '));
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.innerHTML = o.join('');
+}
+function sidePoly(p) {
+  const t = (p.rx || 0) * Math.PI / 180, u = [Math.cos(t), Math.sin(t)], n = [-Math.sin(t), Math.cos(t)];
+  const hy = p.s[1] / 2, hz = p.s[2] / 2, c = [p.c[1], p.c[2]];
+  return [[1, 1], [-1, 1], [-1, -1], [1, -1]].map(([a, b]) => [c[0] + a * hy * u[0] + b * hz * n[0], c[1] + a * hy * u[1] + b * hz * n[1]])
+    .map(q => `${f2(q[0])},${f2(-q[1])}`).join(' ');
+}
+function drawSide(R, A, bb, ctx, fs) {
+  const svg = els.svgSide, m = 2.2;
+  let x0 = bb.min[1] - m, x1 = bb.max[1] + m, zTop = Math.max(bb.max[2] + 2.6, 10), zBot = -1.6;
+  const cy = (A.bb.min[1] + A.bb.max[1]) / 2;
+  const wide = A.bb.max[0] - A.bb.min[0] > A.bb.max[1] - A.bb.min[1];
+  const sl = wide ? LIM.w : LIM.l;
+  const showLim = S.prefs.startBox || A.bb.max[2] > 24;
+  if (S.prefs.startBox) { x0 = Math.min(x0, cy - sl / 2 - 1); x1 = Math.max(x1, cy + sl / 2 + 1); }
+  if (showLim) zTop = Math.max(zTop, LIM.h + 2.6);
+  let vb = [x0, -zTop, x1 - x0, zTop - zBot];
+  if (V2.drag && V2.vb.side) vb = V2.vb.side; else V2.vb.side = vb;
+  const o = [gridDefs('s'), `<rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="url(#g1s)"/><rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="url(#g5s)"/>`];
+  o.push(`<rect x="${f2(vb[0])}" y="0" width="${f2(vb[2])}" height="${f2(-zBot + 1)}" fill="var(--surface-2)" opacity=".7"/>`);
+  o.push(`<line class="floor" x1="${f2(vb[0])}" y1="0" x2="${f2(vb[0] + vb[2])}" y2="0"/>`);
+  if (showLim) o.push(`<line class="lim" x1="${f2(vb[0])}" y1="${-LIM.h}" x2="${f2(vb[0] + vb[2])}" y2="${-LIM.h}"/><text class="gtxt" x="${f2(vb[0] + 0.5)}" y="${-LIM.h - 0.5}" font-size="${fs * 0.85}">시작 높이 15in</text>`);
+  if (S.prefs.startBox) o.push(`<rect class="lim" x="${f2(cy - sl / 2)}" y="${-LIM.h}" width="${sl}" height="${LIM.h}"/>`);
+  const order = R.parts.slice().sort((a, b) => (a.shape === 'line') - (b.shape === 'line') || a.c[0] - b.c[0]);
+  for (const p of order) {
+    const cls = partClass(p, ctx) + (p.group === 'drive' ? ' xr' : ''), st = ctx.peer.has(p.key) && !cls.includes(' sel') ? ` style="stroke:${ctx.peer.get(p.key)}"` : '';
+    if (p.shape === 'line') { o.push(`<line class="${cls}" data-key="${p.key}" x1="${f2(p.a[1])}" y1="${f2(-p.a[2])}" x2="${f2(p.b[1])}" y2="${f2(-p.b[2])}"${st}/>`); continue; }
+    if (p.shape === 'cyl' && p.axis === 'x') { o.push(`<circle class="${cls}" data-key="${p.key}" cx="${f2(p.c[1])}" cy="${f2(-p.c[2])}" r="${f2(p.r)}"${st}/>`); continue; }
+    if (!p.rx) { const b = p.bb; o.push(`<rect class="${cls}" data-key="${p.key}" x="${f2(b.min[1])}" y="${f2(-b.max[2])}" width="${f2(b.max[1] - b.min[1])}" height="${f2(b.max[2] - b.min[2])}" rx="0.1"${st}/>`); continue; }
+    o.push(`<polygon class="${cls}" data-key="${p.key}" points="${sidePoly(p)}"${st}/>`);
+  }
+  o.push(comSym(A.com[1], -A.com[2]));
+  o.push(modLabels(R, 1, 2, fs));
+  const T = R.T;
+  o.push(`<text class="ftxt" x="${f2(vb[0] + vb[2] - 0.5)}" y="${f2(vb[1] + 1.6)}" font-size="${fs}" text-anchor="end">${T.decided ? '앞 →' : '끝 1 →'}</text>`);
+  o.push(`<text class="gtxt" x="${f2(vb[0] + 0.5)}" y="${f2(vb[1] + 1.6)}" font-size="${fs * 0.9}">← ${T.decided ? '뒤' : '끝 2'}</text>`);
+  svg.setAttribute('viewBox', vb.map(f2).join(' '));
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.innerHTML = o.join('');
+}
+
+/* ---------- 끌어서 옮기기 ---------- */
+function svgPt(svg, e) {
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const m = svg.getScreenCTM(); return m ? pt.matrixTransform(m.inverse()) : { x: 0, y: 0 };
+}
+function bind2D(svg, view) {
+  let bgTap = null;
+  svg.addEventListener('pointerdown', e => {
+    const t = e.target.closest('[data-key]');
+    if (!t) { bgTap = [e.clientX, e.clientY]; return; }
+    bgTap = null;
+    selectKey(t.getAttribute('data-key'), '2d');
+    const u = selUnit();
+    if (!u || !canEditNow(true)) return;
+    try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+    V2.drag = { view, unit: u, p0: svgPt(svg, e), c0: [e.clientX, e.clientY], moved: false, delta: [0, 0, 0], id: e.pointerId };
+    e.preventDefault();
+  });
+  svg.addEventListener('pointermove', e => {
+    const D = V2.drag; if (!D || D.id !== e.pointerId) return;
+    if (!D.moved && Math.hypot(e.clientX - D.c0[0], e.clientY - D.c0[1]) < 5) return;
+    D.moved = true;
+    const p = svgPt(svg, e), st = S.prefs.step;
+    const du = Math.round((p.x - D.p0.x) / st) * st, dv = Math.round((p.y - D.p0.y) / st) * st;
+    const delta = view === 'top' ? [du, -dv, 0] : [0, du, -dv];
+    if (delta.join() !== D.delta.join()) { D.delta = delta; S.drag = { unit: D.unit, delta }; refresh({ panel: false }); }
+  });
+  const end = e => {
+    const D = V2.drag;
+    if (!D || D.id !== e.pointerId) {
+      if (e.type === 'pointerup' && bgTap && Math.hypot(e.clientX - bgTap[0], e.clientY - bgTap[1]) < 6) selectKey(null, '2d');
+      bgTap = null; return;
+    }
+    V2.drag = null; S.drag = null;
+    if (D.moved && (D.delta[0] || D.delta[1] || D.delta[2])) commitMove(D.unit, D.delta);
+    else refresh({ panel: false });
+  };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+}
+
+/* =========================================================
+   상태 · 저장 · 기록 · 되돌리기 · 실시간
+   공유 저장(db): designs/<id>, history/<id>, people/<id>
+   ========================================================= */
+const S = {
+  mode: 'loading',          // loading | shared | local
+  readonly: false,
+  db: null, user: null, room: null,
+  meId: null,
+  designs: {}, history: [], people: {}, profiles: {},
+  curId: null, sel: null, drag: null, preview: null,
+  tab: 'combo', ui: { orientOpen: null, renaming: null, confirmDel: null, histAll: false, cmp: [] },
+  peers: [], firstSnap: false, histReady: false, bootTs: Date.now(),
+  prefs: null, sync: 'loading',
+};
+const CUR = { robot: null, an: null };
+const PREF_KEY = 'vexiq-design-prefs-v1', LOCAL_KEY = 'vexiq-design-local-v1';
+
+function loadPrefs() {
+  const def = { explain: true, view: null, sv: 'top', step: 1, startBox: false, big: false, lastDesign: null };
+  try { const v = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); return Object.assign(def, v || {}); } catch (e) { return def; }
+}
+function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify(S.prefs)); } catch (e) {} }
+const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+/* ---------- 현재 구상안 ---------- */
+function liveDesigns() {
+  return Object.entries(S.designs).filter(([, d]) => d && !d.deleted)
+    .sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0)).map(([id, d]) => Object.assign({ id }, d));
+}
+function curDesign() {
+  const d = S.curId && S.designs[S.curId];
+  return d || null;
+}
+function viewDesign() {
+  const d = curDesign() || S.placeholder || (S.placeholder = defaultDesign('구상안 1'));
+  if (!S.preview) return d;
+  return deepMerge(clone(d), S.preview);
+}
+function ensureCur() {
+  const live = liveDesigns();
+  if (S.curId && S.designs[S.curId] && !S.designs[S.curId].deleted) return;
+  const want = S.prefs.lastDesign && S.designs[S.prefs.lastDesign] && !S.designs[S.prefs.lastDesign].deleted ? S.prefs.lastDesign : null;
+  const prev = S.curId;
+  S.curId = want || (live[0] && live[0].id) || null;
+  if (prev && prev !== S.curId && S.designs[prev] && S.designs[prev].deleted && S.firstSnap) toast('보던 구상안이 삭제돼서 다른 구상안을 열었어요');
+}
+
+/* ---------- 권한 ---------- */
+function canEditNow(quiet) {
+  if (S.mode === 'loading') { if (!quiet) toast('아직 불러오는 중이에요'); return false; }
+  if (S.readonly) { if (!quiet) toast('보기 전용이라 바꿀 수 없어요'); return false; }
+  if (!curDesign()) { if (!quiet) toast('먼저 구상안을 만들어 주세요'); return false; }
+  return true;
+}
+
+/* ---------- 쓰기 대기열 (문서마다 한 번에 하나) ---------- */
+const QUEUE = new Map();
+function enqueue(path, fn) {
+  const prev = QUEUE.get(path) || Promise.resolve();
+  const next = prev.catch(() => {}).then(() => runWrite(fn));
+  QUEUE.set(path, next);
+  return next;
+}
+async function runWrite(fn) {
+  try { return await fn(); }
+  catch (e) {
+    const code = e && e.code;
+    if (code === 'unavailable') { await new Promise(r => setTimeout(r, 500 + Math.random() * 600)); return await fn(); }
+    throw e;
+  }
+}
+let pendingWrites = 0;
+function track(p) {
+  pendingWrites++; setSync('saving');
+  return p.then(v => { pendingWrites--; if (!pendingWrites) setSync('saved'); return v; },
+    e => { pendingWrites--; onWriteError(e); });
+}
+function onWriteError(e) {
+  const code = e && e.code;
+  if (code === 'invalid_argument' || code === 'permission-denied') {
+    S.readonly = true; setSync('ro'); renderChrome(); refresh();
+    toast(BACKEND.text.roToast);
+  } else if (code === 'quota_exceeded' || code === 'resource-exhausted') {
+    setSync('error'); toast(BACKEND.text.quota);
+  } else if (code === 'revoked' || code === 'not_granted' || code === 'unauthenticated') {
+    setSync('error'); toast('저장 권한이 없어졌어요. 앱을 다시 열어 주세요.');
+  } else { setSync('error'); toast('저장하지 못했어요. 인터넷 연결을 확인해 주세요.'); }
+}
+function persistLocal() {
+  if (S.mode !== 'local') return;
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ designs: S.designs, history: S.history.slice(0, 150) })); } catch (e) {}
+}
+
+/* ---------- 바꾸기 (+기록) ----------
+   h: { label } 또는 { ckey, vec, labelFn } 또는 { ckey, from, to, labelFn } */
+function commit(patch, h) {
+  if (!canEditNow()) return;
+  const id = S.curId, d0 = S.designs[id];
+  const before = clone(d0);
+  const meta = { updatedAt: Date.now(), updatedBy: S.meId || null };
+  S.designs[id] = Object.assign(deepMerge(clone(d0), patch), meta);
+  refresh();
+  if (S.mode === 'shared') track(enqueue('designs/' + id, () => S.db.doc('designs/' + id).update(Object.assign(clone(patch), meta))));
+  recordHistory(id, before, h || {});
+  persistLocal();
+}
+function recordHistory(designId, before, h) {
+  const now = Date.now();
+  if (h.ckey) {
+    const last = S.history.find(e => e.designId === designId && !e.isUndo);
+    if (last && last.ckey === h.ckey && last.by === S.meId && !last.undone && now - last.ts < 30000) {
+      const upd = { ts: now };
+      if (h.vec) { upd.acc = add3(last.acc || [0, 0, 0], h.vec).map(r2); upd.label = h.labelFn(upd.acc); }
+      else { upd.to = h.to; upd.label = h.labelFn(last.from, h.to); }
+      Object.assign(last, upd);
+      if (S.mode === 'shared') track(enqueue('history/' + last.id, () => S.db.doc('history/' + last.id).update(upd)));
+      persistLocal(); refreshHistoryUI();
+      return;
+    }
+  }
+  const e = { id: newId('h'), designId, ts: now, by: S.meId || null, before, ckey: h.ckey || null, kind: h.kind || 'edit',
+    label: h.label || (h.vec ? h.labelFn(h.vec) : h.labelFn ? h.labelFn(h.from, h.to) : '수정'),
+    acc: h.vec ? h.vec.map(r2) : null, from: h.from == null ? null : h.from, to: h.to == null ? null : h.to,
+    isUndo: !!h.isUndo, undone: false };
+  S.history.unshift(e);
+  if (S.mode === 'shared') {
+    const body = clone(e); delete body.id;
+    track(enqueue('history/' + e.id, () => S.db.doc('history/' + e.id).set(body)));
+  }
+  persistLocal(); refreshHistoryUI();
+}
+
+/* ---------- 되돌리기 ---------- */
+function undoTarget(designId) { return S.history.find(e => e.designId === designId && !e.undone && !e.isUndo && e.before); }
+function undoLast() {
+  if (!canEditNow()) return;
+  const e = undoTarget(S.curId);
+  if (!e) return toast('되돌릴 변경이 없어요');
+  restoreEntry(e, false);
+}
+function restoreEntry(e, cascade) {
+  if (S.readonly || S.mode === 'loading') return canEditNow();
+  const id = e.designId, cur = clone(S.designs[id] || Object.assign(defaultDesign(), { deleted: true }));
+  const target = Object.assign(clone(e.before), { updatedAt: Date.now(), updatedBy: S.meId || null });
+  S.designs[id] = target;
+  const affected = cascade ? S.history.filter(x => x.designId === id && x.ts >= e.ts && !x.undone && !x.isUndo) : [e];
+  affected.forEach(x => { x.undone = true; });
+  if (S.mode === 'shared') {
+    track(enqueue('designs/' + id, () => S.db.doc('designs/' + id).set(target)));
+    for (const x of affected.slice(0, 40)) track(enqueue('history/' + x.id, () => S.db.doc('history/' + x.id).update({ undone: true })));
+  }
+  recordHistory(id, cur, { label: (cascade ? '이 시점 전으로 돌아감 · ' : '되돌림 · ') + e.label, isUndo: true, kind: 'undo' });
+  if (target.deleted && S.curId === id) { S.curId = null; ensureCur(); }
+  else if (!target.deleted && !curDesign()) S.curId = id;
+  persistLocal(); refresh();
+  toast((cascade ? '그 변경 전으로 돌아갔어요' : '되돌렸어요') + ' · ' + e.label);
+}
+
+/* ---------- 구상안 ---------- */
+function createDesign(fromId) {
+  if (S.readonly || S.mode === 'loading') return canEditNow();
+  const n = Object.keys(S.designs).length + 1;
+  let d;
+  if (fromId && S.designs[fromId]) { d = clone(S.designs[fromId]); d.name = (d.name || '구상안') + ' 복사'; }
+  else d = defaultDesign('구상안 ' + n);
+  Object.assign(d, { deleted: false, createdAt: Date.now(), createdBy: S.meId || null, updatedAt: Date.now(), updatedBy: S.meId || null });
+  const id = newId('d');
+  S.designs[id] = d; S.curId = id; S.prefs.lastDesign = id; savePrefs();
+  if (S.mode === 'shared') track(enqueue('designs/' + id, () => S.db.doc('designs/' + id).set(clone(d))));
+  recordHistory(id, Object.assign(clone(d), { deleted: true }), { label: fromId ? `구상안 복제 · ${d.name}` : `새 구상안 · ${d.name}`, kind: 'create' });
+  persistLocal(); selectKey(null, 'silent'); refresh(); pushPresence();
+  toast(`"${d.name}"을 만들었어요`);
+}
+function openDesign(id) {
+  if (!S.designs[id] || S.designs[id].deleted) return;
+  S.curId = id; S.prefs.lastDesign = id; savePrefs(); S.preview = null;
+  selectKey(null, 'silent'); refresh(); pushPresence(); fitCam(true);
+}
+function designPatch(id, patch, label) {
+  if (S.readonly || S.mode === 'loading') return canEditNow();
+  const d0 = S.designs[id]; if (!d0) return;
+  const before = clone(d0), meta = { updatedAt: Date.now(), updatedBy: S.meId || null };
+  S.designs[id] = Object.assign(deepMerge(clone(d0), patch), meta);
+  if (S.mode === 'shared') track(enqueue('designs/' + id, () => S.db.doc('designs/' + id).update(Object.assign(clone(patch), meta))));
+  recordHistory(id, before, { label, kind: 'design' });
+  if (S.designs[id].deleted && S.curId === id) { S.curId = null; ensureCur(); }
+  persistLocal(); refresh();
+}
+
+/* ---------- 이름 ---------- */
+function personName(id) {
+  const p = S.profiles[id]; if (p && p.name) return p.name;
+  const q = S.people[id]; return (q && (q.nick || q.name)) || '';
+}
+function whoName(id) {
+  if (!id) return '누군가';
+  if (id === 'claude') return 'Claude';
+  if (id === S.meId) return '나';
+  return personName(id) || '함께 만드는 사람';
+}
+function myLabel() {
+  const q = S.people[S.meId], p = S.meId && S.profiles[S.meId];
+  return (q && (q.nick || q.name)) || (p && p.name) || '';
+}
+function hashColor(id) {
+  let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return `hsl(${h % 360}, 62%, 48%)`;
+}
+function peerColor(id) { const p = S.profiles[id]; return (p && p.color) || hashColor(id); }
+function avatarHtml(id) {
+  const p = S.profiles[id], q = S.people[id];
+  const url = (p && p.avatarUrl) || (q && q.photo);
+  if (url) return `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer">`;
+  const nm = whoName(id), ch = id === 'claude' ? 'C' : (nm[0] || '?');
+  return `<span class="av" style="background:${id === 'claude' ? '#c96442' : hashColor(id)}">${esc(ch)}</span>`;
+}
+
+/* ---------- 실시간: 같이 보는 사람 (pushPresence는 저장 연결 파일에) ---------- */
+function peerSelections() {
+  const out = [];
+  for (const p of S.peers) {
+    const pr = p.presence || {};
+    if (pr.d && pr.d === S.curId && pr.sel) out.push({ key: pr.sel, color: peerColor(p.by || pr.me || p.peer) });
+  }
+  return out;
+}
+
+/* ---------- 공유 저장 구독 (두 저장 연결이 같이 씀) ---------- */
+function subscribeShared(db) {
+  const off = [];
+  off.push(db.collection('designs').onSnapshot(snap => {
+    const next = {};
+    snap.docs.forEach(doc => { if (doc.exists) next[doc.id] = clone(doc.data()); });
+    S.designs = next; S.firstSnap = true;
+    if (BACKEND.onDesigns) BACKEND.onDesigns(snap);
+    ensureCur(); refresh({ keepCam: true });
+    if (!S.fitted && curDesign()) { S.fitted = true; fitCam(true); }
+  }, e => BACKEND.onReadError(e)));
+  off.push(db.collection('history').orderBy('ts', 'desc').limit(HIST_KEEP).onSnapshot(snap => {
+    if (!S.pruned && snap.size >= HIST_KEEP && !S.readonly) { S.pruned = true; pruneHistory(snap.docs[snap.docs.length - 1].data().ts); }
+    if (S.histReady) {
+      for (const ch of snap.docChanges()) {
+        if (ch.type === 'removed') continue;
+        const e = ch.doc.data();
+        if (e && e.by !== S.meId && e.ts > S.bootTs - 2000) foreignToast(ch.doc.id, e);
+      }
+    }
+    S.history = snap.docs.map(doc => Object.assign({ id: doc.id }, doc.data()));
+    S.histReady = true;
+    resolveNames(S.history.map(e => e.by));
+    refreshHistoryUI();
+  }, () => {}));
+  off.push(db.collection('people').onSnapshot(snap => {
+    const m = {}; snap.docs.forEach(doc => { m[doc.id] = doc.data(); }); S.people = m; refreshHistoryUI(); renderPeers();
+  }, () => {}));
+  return () => off.forEach(f => { try { f && f(); } catch (e) {} });
+}
+const HIST_KEEP = 300;
+function pruneHistory(oldestKept) {
+  S.db.collection('history').orderBy('ts', 'asc').limit(80).get().then(q => {
+    for (const doc of q.docs) {
+      const e = doc.data();
+      if (e && e.ts < oldestKept) track(enqueue('history/' + doc.id, () => S.db.doc('history/' + doc.id).delete()));
+    }
+  }).catch(() => {});
+}
+const lastToast = new Map();
+function foreignToast(id, e) {
+  const t = lastToast.get(id) || 0;
+  if (Date.now() - t < 5000) return;
+  lastToast.set(id, Date.now());
+  const d = S.designs[e.designId];
+  const where = e.designId !== S.curId && d ? ` (${d.name})` : '';
+  toast(`<b>${esc(whoName(e.by))}</b> · ${esc(e.label)}${esc(where)}`, true);
+}
+function startLocal() {
+  S.mode = 'local'; S.meId = 'local';
+  try {
+    const v = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null');
+    if (v && v.designs) { S.designs = v.designs; S.history = v.history || []; }
+  } catch (e) {}
+  if (!liveDesigns().length) {
+    const d = defaultDesign('구상안 1'); const id = newId('d');
+    S.designs[id] = d;
+  }
+  S.firstSnap = true; S.histReady = true;
+  ensureCur(); setSync('local'); renderChrome(); refresh(); fitCam(true);
+}
+
+/* =========================================================
+   저장 연결: Firebase (설치형 앱)
+   구글 로그인 → Firestore: designs · history · people · presence · meta
+   등록된 계정만 읽고 쓸 수 있게 Firestore 보안 규칙으로 막는다.
+   ========================================================= */
+const BACKEND = {
+  kind: 'firebase',
+  text: {
+    local: 'Firebase 연결 전이라 바꾼 내용이 이 기기에만 남아요.',
+    ro: '이 구글 계정은 등록되지 않아서 저장할 수 없어요.',
+    roToast: '이 구글 계정은 등록되지 않아서 저장할 수 없어요.',
+    quota: '오늘 쓸 수 있는 무료 저장 횟수를 다 썼어요. 내일 다시 저장돼요.',
+  },
+  onReadError(e) {
+    if (e && e.code === 'permission-denied') return notMember();
+    setSync('error'); toast('불러오지 못했어요. 인터넷 연결을 확인해 주세요.');
+  },
+  onDesigns(snap) { maybeImportSeed(snap); },
+  saveNick(id, v) { return S.db.doc('people/' + id).update({ nick: v, ts: Date.now() }); },
+  accountHtml() {
+    if (!FBS.user) return '';
+    return `<section class="sec"><div class="nick"><span>로그인한 계정: <b>${esc(FBS.user.email || '')}</b></span><button class="btn sm" type="button" data-act="logout">로그아웃</button></div></section>`;
+  },
+  login() { login(); },
+  logout() { if (FBS.auth) FBS.auth.signOut(); },
+};
+const FBS = { auth: null, fs: null, user: null, off: null, presOff: null, pres: [], peerSig: '', hb: null, imported: false };
+
+/* Claude 쪽 db와 같은 모양으로 감싼다. update는 하위 객체까지 합치는 set(merge)로.
+   Firestore는 undefined 값을 받지 않아서 JSON으로 한 번 걸러서 보낸다. */
+const fbClean = d => JSON.parse(JSON.stringify(d));
+function fbAdapter(fs) {
+  const wrap = r => ({
+    id: r.id, path: r.path,
+    get: () => r.get(),
+    set: d => r.set(fbClean(d)),
+    update: d => r.set(fbClean(d), { merge: true }),
+    delete: () => r.delete(),
+    onSnapshot: (n, e) => r.onSnapshot(n, e),
+  });
+  return { doc: p => wrap(fs.doc(p)), collection: p => fs.collection(p) };
+}
+
+function initBackend() {
+  const cfg = window.FIREBASE_CONFIG;
+  if (!cfg || !cfg.apiKey || !window.firebase) return startLocal();
+  try {
+    firebase.initializeApp(cfg);
+    FBS.auth = firebase.auth();
+    FBS.fs = firebase.firestore();
+    const p = FBS.fs.enablePersistence && FBS.fs.enablePersistence({ synchronizeTabs: true });
+    if (p && p.catch) p.catch(() => {});
+  } catch (e) { console.error(e); return startLocal(); }
+  bindGate();
+  FBS.auth.getRedirectResult().catch(e => { if (!FBS.user) authError(e); });
+  FBS.auth.onAuthStateChanged(u => (u ? signedIn(u) : signedOut()));
+}
+
+/* ---------- 로그인 화면 ---------- */
+function bindGate() {
+  if (!els.gate || els.gate.dataset.bound) return;
+  els.gate.dataset.bound = '1';
+  els.gateLogin.addEventListener('click', login);
+  // 구글 계정 고르는 창이 뜨니 로그아웃 없이 바로 연다 (팝업이 막히지 않게 누른 순간 연다)
+  els.gateOut.addEventListener('click', login);
+}
+function showGate(msg, opts) {
+  if (!els.gate) return;
+  opts = opts || {};
+  els.gateMsg.textContent = msg || '지안이와 같이 쓰는 로봇 설계 앱이에요. 구글 계정으로 로그인해 주세요.';
+  els.gateLogin.hidden = !!opts.other;
+  els.gateLogin.disabled = !!opts.busy;
+  els.gateLogin.textContent = opts.busy ? '로그인 창을 여는 중…' : '구글 계정으로 로그인';
+  els.gateOut.hidden = !opts.other;
+  els.gate.hidden = false;
+}
+function hideGate() { if (els.gate) els.gate.hidden = true; }
+function login() {
+  const p = new firebase.auth.GoogleAuthProvider();
+  p.setCustomParameters({ prompt: 'select_account' });
+  showGate('', { busy: true });
+  FBS.auth.signInWithPopup(p).catch(e => {
+    const c = e && e.code;
+    if (c === 'auth/popup-blocked' || c === 'auth/operation-not-supported-in-this-environment') return FBS.auth.signInWithRedirect(p).catch(authError);
+    authError(e);
+  });
+}
+function authError(e) {
+  if (!e) return;
+  const c = e.code || '';
+  const msg = c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request' ? '로그인 창이 닫혔어요. 다시 눌러 주세요.'
+    : c === 'auth/unauthorized-domain' ? '이 주소가 Firebase에 아직 등록되지 않았어요. Firebase의 Authentication 설정에서 승인된 도메인에 이 주소를 추가해 주세요.'
+    : c === 'auth/network-request-failed' ? '인터넷 연결을 확인해 주세요.'
+    : '로그인하지 못했어요. 설치한 앱에서 안 되면 크롬에서 이 주소를 열어 로그인한 뒤 앱을 다시 열어 보세요.';
+  showGate(msg);
+}
+function notMember() {
+  S.readonly = true; setSync('ro'); renderChrome();
+  showGate(`${(FBS.user && FBS.user.email) || '이 계정'}은 등록되지 않은 계정이에요. 등록된 구글 계정으로 다시 로그인해 주세요.`, { other: true });
+}
+
+/* ---------- 로그인 상태 ---------- */
+function signedIn(u) {
+  if (FBS.user && FBS.user.uid !== u.uid) resetShared();
+  FBS.user = u;
+  hideGate();
+  S.meId = u.uid; S.readonly = false;
+  S.db = fbAdapter(FBS.fs); S.mode = 'shared';
+  S.people[u.uid] = Object.assign({}, S.people[u.uid], { name: u.displayName || '', photo: u.photoURL || '' });
+  setSync('saved'); renderChrome();
+  S.db.doc('people/' + u.uid).update({ name: u.displayName || '', photo: u.photoURL || '', email: u.email || '', seen: Date.now() }).catch(() => {});
+  if (FBS.off) FBS.off();
+  FBS.off = subscribeShared(S.db);
+  startPresence();
+  refresh();
+}
+function resetShared() {
+  if (FBS.off) { FBS.off(); FBS.off = null; }
+  if (FBS.presOff) { FBS.presOff(); FBS.presOff = null; }
+  Object.assign(S, { mode: 'loading', db: null, meId: null, readonly: false, designs: {}, history: [], people: {}, peers: [],
+    curId: null, sel: null, preview: null, firstSnap: false, histReady: false, fitted: false });
+  FBS.imported = false; FBS.peerSig = ''; FBS.pres = [];
+}
+function signedOut() {
+  FBS.user = null;
+  resetShared();
+  setSync('loading'); renderPeers(); refresh();
+  showGate();
+}
+
+/* ---------- 이름 (people 문서에 이름·사진이 있다) ---------- */
+function resolveNames() {}
+
+/* ---------- 같이 보는 사람: presence/<uid> ---------- */
+let presTimer = null;
+function pushPresence() {
+  if (!FBS.fs || !S.meId || S.mode !== 'shared' || S.readonly) return;
+  clearTimeout(presTimer);
+  presTimer = setTimeout(() => {
+    if (!S.db || !S.meId) return;
+    S.db.doc('presence/' + S.meId).update({ d: S.curId || null, sel: (S.sel && S.sel.key) || null, ts: Date.now(), on: document.visibilityState === 'visible' }).catch(() => {});
+  }, 500);
+}
+function startPresence() {
+  if (FBS.presOff) FBS.presOff();
+  FBS.presOff = FBS.fs.collection('presence').onSnapshot(snap => {
+    FBS.pres = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+    updatePeers();
+  }, () => {});
+  pushPresence();
+  if (!FBS.hb) {
+    FBS.hb = setInterval(() => { if (document.visibilityState === 'visible') pushPresence(); updatePeers(); }, 30000);
+    document.addEventListener('visibilitychange', pushPresence);
+    window.addEventListener('pagehide', () => {
+      if (S.db && S.meId) S.db.doc('presence/' + S.meId).update({ on: false, ts: Date.now() }).catch(() => {});
+    });
+  }
+}
+function updatePeers() {
+  const now = Date.now();
+  const list = (FBS.pres || []).filter(p => p.id !== S.meId && p.on && now - (p.ts || 0) < 75000)
+    .map(p => ({ peer: p.id, by: p.id, isMe: false, kind: 'viewer', presence: { d: p.d || null, sel: p.sel || null, me: p.id } }));
+  const sig = JSON.stringify(list.map(p => [p.by, p.presence.d, p.presence.sel]));
+  if (sig === FBS.peerSig) return;
+  FBS.peerSig = sig; S.peers = list;
+  renderPeers(); refresh({ panel: false });
+}
+
+/* ---------- Claude 앱에서 만든 구상안·기록 처음 한 번 가져오기 ----------
+   저장소가 비어 있고 아직 가져온 적이 없을 때만. 기기 캐시가 아니라 서버에 물어보고 정한다. */
+function maybeImportSeed(snap) {
+  if (FBS.imported || !window.SEED || !snap.empty || S.readonly) return;
+  FBS.imported = true;
+  const server = { source: 'server' };
+  FBS.fs.doc('meta/import').get(server).then(m => {
+    if (m.exists) return;
+    return FBS.fs.collection('designs').limit(1).get(server).then(q => {
+      if (!q.empty) return;
+      const ops = [];
+      for (const [id, d] of Object.entries(SEED.designs || {})) ops.push(['designs/' + id, d]);
+      for (const e of SEED.history || []) { const body = Object.assign({}, e); delete body.id; ops.push(['history/' + e.id, body]); }
+      for (const [id, p] of Object.entries(SEED.people || {})) ops.push(['people/' + id, p, true]);
+      const chunks = [];
+      for (let i = 0; i < ops.length; i += 400) chunks.push(ops.slice(i, i + 400));
+      return chunks.reduce((pr, ch) => pr.then(() => {
+        const b = FBS.fs.batch();
+        for (const [path, data, merge] of ch) b.set(FBS.fs.doc(path), fbClean(data), merge ? { merge: true } : {});
+        return b.commit();
+      }), Promise.resolve())
+        .then(() => FBS.fs.doc('meta/import').set({ at: Date.now(), by: S.meId, from: 'claude-artifact' }))
+        .then(() => toast('Claude 앱에서 만든 구상안과 기록을 가져왔어요'));
+    });
+  }).catch(e => {
+    FBS.imported = false;   // 인터넷이 다시 되면 다음에 다시 시도
+    if (e && e.code === 'permission-denied') notMember();
+  });
+}
+
+/* =========================================================
+   화면: 패널(조합·부품·경고·구상안·기록) · 선택 카드 · 머리줄 · 비교 · 알림
+   ========================================================= */
+const els = {};
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ago = ts => {
+  if (!ts) return '';
+  const s = (Date.now() - ts) / 1000;
+  if (s < 50) return '방금';
+  if (s < 3600) return Math.round(s / 60) + '분 전';
+  if (s < 86400) return Math.round(s / 3600) + '시간 전';
+  const d = new Date(ts);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+const isWide = () => window.innerWidth >= 1100;
+const isPhone = () => window.innerWidth < 760;
+
+function cacheEls() {
+  for (const id of ['app', 'views', 'pane2d', 'pane3d', 'cv', 'labels', 'camBtns', 'pick', 'panel', 'ptabs', 'pbody', 'svgTop', 'svgSide',
+    'sync', 'peers', 'explainToggle', 'designPick', 'designPickName', 'banner', 'viewSeg', 'sideSeg', 'startBoxBtn', 'bigBtn',
+    'sheet', 'sheetBody', 'sheetClose', 'toasts', 'installBtn', 'gate', 'gateMsg', 'gateLogin', 'gateOut']) els[id] = document.getElementById(id);
+}
+
+/* ---------- 새로 그리기 ---------- */
+function refresh(opt) {
+  opt = opt || {};
+  CUR.robot = buildRobot(viewDesign(), S.drag);
+  CUR.an = analyze(CUR.robot);
+  validateSel();
+  render2D(); update3D(); renderPick(); renderTabBadges(); renderChrome();
+  if (opt.panel !== false) renderPanelSafe();
+}
+function refreshSel() { render2D(); update3D(); renderPick(); if (S.tab === 'parts') renderPanelSafe(); }
+function refreshHistoryUI() { if (S.tab === 'hist' || S.tab === 'designs') renderPanelSafe(); }
+
+/* ---------- 선택 ---------- */
+function selUnit() {
+  if (!S.sel || !CUR.robot) return null;
+  const p = CUR.robot.byKey.get(S.sel.key);
+  if (p) return unitOfPart(p);
+  const h = CUR.robot.hidden.find(x => x.key === S.sel.key);
+  return h ? { type: 'drive', key: h.key, id: 'd:' + h.key, hidden: true } : null;
+}
+function validateSel() {
+  if (!S.sel) return;
+  const R = CUR.robot;
+  if (R.byKey.has(S.sel.key) || R.hidden.some(h => h.key === S.sel.key)) return;
+  const pre = S.sel.key.slice(0, 2);
+  const mod = { 'L:': 'launcher', 'I:': 'intake', 'B:': 'brain' }[pre];
+  const alt = mod && R.parts.find(p => p.mod === mod && !p.ghost && !p.bag);
+  S.sel = alt ? { key: alt.key } : null;
+}
+function selectKey(key, src) {
+  if (key && CUR.robot && !(CUR.robot.byKey.has(key) || CUR.robot.hidden.some(h => h.key === key))) key = null;
+  S.sel = key ? { key } : null;
+  S.pickOpen = !!key && (src === 'view' || src === '2d');
+  pushPresence();
+  if (src !== 'silent') refreshSel();
+}
+function renderPick() {
+  const box = els.pick, u = selUnit();
+  if (!u || !S.pickOpen) { box.hidden = true; box.innerHTML = ''; return; }
+  const R = CUR.robot, p = R.byKey.get(S.sel.key);
+  const kind = p ? p.kind : (R.hidden.find(h => h.key === S.sel.key) || {}).kind;
+  const info = KIND[kind] || { name: kind, role: '', text: '' };
+  const g = u.type === 'mod' ? u.mod : u.type === 'custom' ? 'custom' : 'drive';
+  const nm = p ? partName(p, R.T) : unitName(u, R);
+  box.innerHTML = `<h4>${esc(nm)} <span class="chip g-${g}${p && p.ph ? ' ghost' : ''}">${GROUP_LABEL[g]}${p && p.ph ? ' · 임시 상자' : ''}</span></h4>
+    <div class="acts"><button class="btn sm" type="button" data-act="go" data-tab="parts">${S.readonly ? '자세히' : '조절하기'}</button><button class="x" type="button" data-act="pickClose" aria-label="닫기">×</button></div>
+    <p class="ex-only"><b>${esc(info.role)}</b> · ${esc(info.text)}</p>`;
+  box.hidden = false;
+}
+
+/* ---------- 머리줄 · 보기 방식 ---------- */
+function setSync(s) {
+  S.sync = s;
+  if (!els.sync) return;
+  els.sync.dataset.s = s;
+  els.sync.querySelector('span').textContent = { loading: '불러오는 중', saved: '저장됨', saving: '저장 중', error: '저장 안 됨', ro: '보기 전용', local: '이 기기에만 저장' }[s] || '';
+}
+function effView() {
+  let v = S.prefs.view || (isWide() ? 'split' : '3d');
+  if (v === 'split' && !isWide()) v = '3d';
+  return v;
+}
+function renderChrome() {
+  const app = els.app;
+  app.classList.toggle('noex', !S.prefs.explain);
+  app.classList.toggle('big', !!S.prefs.big && isPhone());
+  app.classList.toggle('ro', !!S.readonly);
+  els.explainToggle.checked = !!S.prefs.explain;
+  const d = curDesign();
+  els.designPickName.textContent = d ? d.name : (S.mode === 'loading' ? '불러오는 중' : '구상안 없음');
+  const v = effView();
+  if (els.views.dataset.v !== v) { els.views.dataset.v = v; requestAnimationFrame(() => { resize3D(); render2D(); }); }
+  const modes = isWide() ? [['split', '나란히'], ['3d', '3D'], ['2d', '2D']] : [['3d', '3D'], ['2d', '2D 도면']];
+  const segHtml = modes.map(([k, l]) => `<button type="button" data-view="${k}" class="${k === v ? 'on' : ''}" aria-pressed="${k === v}">${l}</button>`).join('');
+  if (els.viewSeg.innerHTML !== segHtml) els.viewSeg.innerHTML = segHtml;
+  const narrow2d = v === '2d' && !isWide();
+  els.sideSeg.hidden = !narrow2d;
+  els.pane2d.dataset.only = narrow2d ? S.prefs.sv : '';
+  els.sideSeg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.sv === S.prefs.sv));
+  els.startBoxBtn.classList.toggle('on', !!S.prefs.startBox);
+  els.startBoxBtn.setAttribute('aria-pressed', !!S.prefs.startBox);
+  els.bigBtn.classList.toggle('on', !!S.prefs.big);
+  els.bigBtn.textContent = S.prefs.big ? '작게' : '크게';
+  // 안내 띠
+  let bn = '', k = '';
+  if (S.updateReady) { bn = '새 버전이 나왔어요. <button class="btn sm pri" type="button" data-act="reload">지금 적용</button>'; k = 'upd'; }
+  else if (S.mode === 'local') { bn = esc(BACKEND.text.local); k = 'local'; }
+  else if (S.readonly) { bn = esc(BACKEND.text.ro); k = 'ro'; }
+  else if (S.mode === 'shared' && S.firstSnap && !liveDesigns().length) { bn = '구상안이 아직 없어요. <button class="btn sm pri" type="button" data-act="newDesign">첫 구상안 만들기</button>'; k = 'empty'; }
+  if (els.banner.dataset.html !== bn) { els.banner.innerHTML = bn; els.banner.dataset.html = bn; els.banner.dataset.k = k; }
+  els.banner.hidden = !bn;
+}
+function renderPeers() {
+  const seen = new Set(), out = [];
+  for (const p of S.peers) {
+    const id = p.by || (p.presence && p.presence.me) || p.peer;
+    if (seen.has(id)) continue; seen.add(id);
+    const nm = personName(id) || '함께 보는 사람';
+    const d = p.presence && p.presence.d && S.designs[p.presence.d];
+    out.push(`<span class="peer" title="${esc(nm)} · 지금 보는 중${d ? ' · ' + esc(d.name) : ''}">${avatarHtml(id)}<span class="pn">${esc(nm)}</span></span>`);
+  }
+  els.peers.innerHTML = out.slice(0, 3).join('');
+}
+function renderTabBadges() {
+  const n = CUR.an.nDanger + CUR.an.nWarn;
+  els.ptabs.querySelectorAll('.ptab').forEach(b => {
+    const t = b.dataset.tab;
+    b.classList.toggle('on', t === S.tab);
+    b.setAttribute('aria-selected', t === S.tab);
+    if (t === 'warn') b.innerHTML = '경고' + (n ? `<span class="n ${CUR.an.nDanger ? '' : 'w'}">${n}</span>` : '');
+  });
+}
+
+/* ---------- 패널 ---------- */
+let panelDirty = false;
+function renderPanelSafe() {
+  const a = document.activeElement;
+  if (a && els.pbody.contains(a) && (a.tagName === 'INPUT' && a.type === 'text')) { panelDirty = true; return; }
+  renderPanel();
+}
+function renderPanel() {
+  panelDirty = false;
+  const t = S.tab;
+  els.pbody.innerHTML = t === 'combo' ? htmlCombo() : t === 'parts' ? htmlParts() : t === 'warn' ? htmlWarn() : t === 'designs' ? htmlDesigns() : htmlHist();
+  renderTabBadges();
+}
+function setTab(t, scroll) {
+  S.tab = t; renderPanel();
+  if (scroll === false) return;
+  if (isPhone()) {
+    const top = els.panel.getBoundingClientRect().top + window.scrollY - els.views.getBoundingClientRect().height;
+    if (window.scrollY > top || scroll === true) window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  } else els.panel.scrollTop = 0;
+}
+
+/* --- 조합 탭 --- */
+function cardHtml(k, c, on) {
+  const ic = k === 'brain' ? { side: 'side', back: 'bback', top: 'top' }[c.v] : c.v;
+  return `<button type="button" class="card${on ? ' on' : ''}" data-act="opt" data-k="${k}" data-v="${c.v}" aria-pressed="${on}">
+    ${iconSvg(OPT_ICON[ic] || ic)}<span class="nm">${esc(c.name)}</span>
+    <span class="ds ex-only">${esc(c.desc)}</span>
+    <span class="pc ex-only"><span class="col">${c.pros.map(x => `<span class="li p">${esc(x)}</span>`).join('')}</span><span class="col">${c.cons.map(x => `<span class="li m">${esc(x)}</span>`).join('')}</span></span>
+  </button>`;
+}
+function secCards(k, cur, allowNone, title) {
+  const g = OPTS[k];
+  return `<section class="sec" id="sec-${k}">
+    <div class="sec-h"><span class="num">${g.step}</span><h3>${esc(title || g.title)}</h3><span class="aside">${esc(optName(k, cur))}</span></div>
+    <div class="cards" style="--n:${g.choices.length}">${g.choices.map(c => cardHtml(k, c, cur === c.v)).join('')}</div>
+    ${allowNone ? `<button type="button" class="undec${cur == null ? ' on' : ''}" data-act="opt" data-k="${k}" data-v="" aria-pressed="${cur == null}">아직 안 정함 · 임시 상자로 두기</button>` : ''}
+  </section>`;
+}
+function secOrient(d, T) {
+  const o = d.orient || {}, decided = !!(o.top && o.front);
+  const open = S.ui.orientOpen == null ? !decided : S.ui.orientOpen;
+  const st = decided ? '<span class="lv lv-ok">정함</span>' : '<span class="lv lv-warn">아직 안 정함</span>';
+  let h = `<section class="sec" id="sec-orient"><div class="sec-h"><span class="num">01</span><h3>앞·위 정하기</h3><span class="aside">${st}</span></div>`;
+  if (!open) {
+    return h + `<div class="stat"><span>위: <b>${o.top}면</b> · 앞: <b>끝 ${o.front === 'end1' ? 1 : 2}</b></span><button class="btn sm" type="button" data-act="orientEdit">바꾸기</button></div></section>`;
+  }
+  h += `<p class="hint ex-only">드라이빙보드는 양쪽 면이 다르게 생겼어요. 어느 면을 <b>위</b>로 둘지, 어느 끝을 <b>앞</b>(인테이커 쪽)으로 할지 정하면 부품 이름도 "앞 왼쪽 모터"처럼 바뀌어요.</p>
+  <div class="oq">어느 면을 위로 둘까요?</div>
+  <div class="orient">
+    ${['A', 'B'].map(f => `<button type="button" class="oc${o.top === f ? ' on' : ''}" data-act="orient" data-k="top" data-v="${f}" aria-pressed="${o.top === f}">
+      <span class="ph"><img src="${faceImg(f)}" alt="${f}면 ${FACE_PHOTOS ? '사진' : '그림'}"><span class="end t">끝 1</span><span class="end b">끝 2</span></span>
+      <span class="nm">${f}면</span><span class="ds">${f === 'A' ? '가운데 세로 빔과 흰 연결 블록이 보이는 면' : '넓은 판 2개가 가로로 지나가는 면'}</span></button>`).join('')}
+  </div>
+  <div class="oq">어느 끝을 앞으로 할까요?</div>
+  <div class="cards" style="--n:2">
+    ${[['end1', '끝 1', 'A면: 흰 연결 블록이 한 줄로 있는 쪽 · B면: 작은 판 2개가 있는 쪽'], ['end2', '끝 2', '모터 바깥쪽이 비어 있고, 가운데 세로 빔이 일찍 끝나는 쪽']].map(([v, n, ds]) =>
+      `<button type="button" class="card${o.front === v ? ' on' : ''}" data-act="orient" data-k="front" data-v="${v}" aria-pressed="${o.front === v}">${iconSvg('front')}<span class="nm">${n}</span><span class="ds">${ds}</span></button>`).join('')}
+  </div>
+  ${decided ? '<button class="btn sm" type="button" data-act="orientDone" style="margin-top:10px">접기</button>' : '<p class="hint" style="margin-top:10px">정하기 전에는 A면을 위, 끝 1을 앞으로 임시로 그려요.</p>'}
+  </section>`;
+  return h;
+}
+function secFine(d) {
+  const o = d.opts, L = o.launch, cat = L === 'catapult', off = !L || L === 'lift';
+  const why = !L ? '발사 방식을 고르면 조절할 수 있어요.' : L === 'lift' ? '들어 올려 넣기는 고무줄과 레일을 쓰지 않아요.' : '';
+  const railL = cat ? SLIDERS.railCat.label : SLIDERS.rail.label, railD = cat ? SLIDERS.railCat.desc : SLIDERS.rail.desc;
+  let h = `<section class="sec" id="sec-fine"><div class="sec-h"><span class="num">06</span><h3>세부 조절</h3></div>${why ? `<p class="hint">${why}</p>` : ''}
+  <div class="slider${off ? ' off' : ''}"><label for="sl-bands">${SLIDERS.bands.label}</label><output id="out-bands" class="mono">${o.bands}개</output>
+    <input type="range" id="sl-bands" data-sl="bands" min="1" max="8" step="1" value="${o.bands}" ${off ? 'disabled' : ''}>
+    <span class="ds ex-only">${SLIDERS.bands.desc}</span></div>
+  <div class="slider${off ? ' off' : ''}"><label for="sl-rail">${railL}</label><output id="out-rail" class="mono">${o.rail}°</output>
+    <input type="range" id="sl-rail" data-sl="rail" min="15" max="85" step="1" value="${o.rail}" ${off ? 'disabled' : ''}>
+    <span class="ds ex-only">${railD}</span></div>`;
+  if (SLING(L)) {
+    h += `<div class="oq" style="margin-top:16px">당기는 장치</div><div class="cards" style="--n:3">${OPTS.pull.choices.map(c => cardHtml('pull', c, (o.pull || 'winch') === c.v)).join('')}</div>`;
+  }
+  return h + '</section>';
+}
+function htmlCombo() {
+  const d = viewDesign(), T = CUR.robot.T, o = d.opts;
+  let h = '';
+  if (!curDesign() && S.mode === 'shared' && S.firstSnap) h += `<section class="sec"><div class="empty">구상안이 아직 없어요. 사진으로 만든 드라이빙보드에서 시작해요.<br><br><button class="btn pri" type="button" data-act="newDesign">첫 구상안 만들기</button></div></section>`;
+  if (S.mode === 'loading') h += `<section class="sec"><p class="hint">저장된 구상안을 불러오는 중이에요. 그동안 사진으로 만든 드라이빙보드를 보여 줘요.</p></section>`;
+  h += secOrient(d, T);
+  h += secCards('launch', o.launch, true);
+  h += secCards('dir', o.dir, false, o.launch === 'lift' ? '넣는 방향' : null);
+  h += secCards('intake', o.intake, true);
+  h += secCards('brain', o.brain, true);
+  h += secFine(d);
+  return h;
+}
+
+/* 면 그림: 사진이 없는 빌드(공개 앱)에서는 모델로 그린 위쪽 도면을 쓴다 */
+const FACE_CACHE = {};
+function faceImg(f) {
+  if (FACE_PHOTOS && FACE_PHOTOS[f]) return FACE_PHOTOS[f];
+  const fr = viewDesign().frame, key = f + fr.w + 'x' + fr.l;
+  if (FACE_CACHE[key]) return FACE_CACHE[key];
+  const d = defaultDesign(); d.frame = { w: fr.w, l: fr.l }; d.orient = { top: f, front: 'end1' };
+  const R = buildRobot(d), ps = R.parts.filter(p => p.group === 'drive');
+  const b = { min: [Infinity, Infinity], max: [-Infinity, -Infinity] };
+  for (const p of ps) for (let i = 0; i < 2; i++) { b.min[i] = Math.min(b.min[i], p.bb.min[i]); b.max[i] = Math.max(b.max[i], p.bb.max[i]); }
+  const m = 1.2, w0 = b.max[0] - b.min[0] + 2 * m, h0 = b.max[1] - b.min[1] + 2 * m, asp = 240 / 280;
+  const W = Math.max(w0, h0 * asp), H = W / asp, x0 = (b.min[0] + b.max[0]) / 2 - W / 2, y0 = -((b.min[1] + b.max[1]) / 2) - H / 2;
+  const col = { wheel: ['#2a2e33', '#5d646c'], motor: ['#d3d7dc', '#7f8892'], conn: ['#fbfcfd', '#8d96a0'], shaft: ['#8a9199', '#5d646c'] };
+  const rects = ps.sort((a, q) => a.bb.max[2] - q.bb.max[2]).map(p => {
+    const v = (KIND[p.kind] || {}).vis, c = col[v] || ['#bfc5cc', '#7f8892'];
+    const rr = v === 'wheel' ? 0.6 : v === 'motor' ? 0.35 : 0.1;
+    return `<rect x="${f2(p.bb.min[0])}" y="${f2(-p.bb.max[1])}" width="${f2(p.bb.max[0] - p.bb.min[0])}" height="${f2(p.bb.max[1] - p.bb.min[1])}" rx="${rr}" fill="${c[0]}" stroke="${c[1]}" stroke-width="0.08"/>`;
+  }).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f2(x0)} ${f2(y0)} ${f2(W)} ${f2(H)}"><rect x="${f2(x0)}" y="${f2(y0)}" width="${f2(W)}" height="${f2(H)}" fill="#e9edf1"/>${rects}</svg>`;
+  return (FACE_CACHE[key] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
+}
+
+/* --- 부품 탭 --- */
+const DRIVE_ORDER = ['omni', 'motor', 'wallOuter', 'wallInner', 'wallEnd', 'cornerConn', 'centerBeam', 'crossPlate', 'connBlock', 'widePlate', 'smallPlate', 'shaft', 'collar'];
+function selBoxHtml(u) {
+  const R = CUR.robot, T = R.T, d = viewDesign();
+  const p = R.byKey.get(S.sel.key);
+  const hid = !p && u.type === 'drive' ? R.hidden.find(x => x.key === u.key) : null;
+  const kind = p ? p.kind : hid ? hid.kind : '';
+  const info = KIND[kind] || { name: kind, role: '', text: '' };
+  const g = u.type === 'mod' ? u.mod : u.type === 'custom' ? 'custom' : 'drive';
+  const nm = p ? partName(p, T) : unitName(u, R);
+  const ro = S.readonly;
+  let h = `<div class="selbox"><h4>${esc(nm)} <span class="chip g-${g}${p && p.ph ? ' ghost' : ''}">${GROUP_LABEL[g]}${p && p.ph ? ' · 임시 상자' : ''}</span></h4>
+    <p class="role">${esc(info.role)}</p><p class="txt ex-only">${esc(info.text)}</p>`;
+  if (hid) {
+    return h + `<p class="hint">이 부품은 빼 둔 상태예요.</p><div class="btnrow"><button class="btn" type="button" data-act="unhide" ${ro ? 'disabled' : ''}>다시 넣기</button></div></div>`;
+  }
+  if (p.bag) return h + '</div>';
+  let off = null;
+  if (u.type === 'mod') { const m = d.mods[u.mod] || {}; off = [m.dx || 0, m.dy || 0, m.dz || 0]; }
+  else if (u.type === 'drive') { const e = d.edits[u.key] || {}; off = T.inv(e.dx || 0, e.dy || 0, e.dz || 0); }
+  const dims = p.shape === 'cyl' && p.axis === 'x' ? `두께 ${fmtN(p.len)} · 지름 ${fmtN(p.r * 2)}칸` : p.shape === 'line' ? '' : `${fmtN(p.s[0])} × ${fmtN(p.s[1])} × ${fmtN(p.s[2])}칸`;
+  const dimsMm = p.shape === 'cyl' && p.axis === 'x' ? `${mm(p.len)} · ${mm(p.r * 2)}mm` : p.shape === 'line' ? '' : `${mm(p.s[0])} × ${mm(p.s[1])} × ${mm(p.s[2])}mm`;
+  let mass = p.mass;
+  if (u.type === 'mod') mass = R.parts.filter(q => q.mod === u.mod).reduce((s, q) => s + (q.ghost || q.bag ? 0 : q.mass || 0), 0);
+  h += `<dl class="kv">${off ? `<dt>원래 자리에서</dt><dd>${vecWords(off)}</dd>` : `<dt>위치</dt><dd>x ${fmtN(p.c[0])} · y ${fmtN(p.c[1])} · z ${fmtN(p.c[2])}</dd>`}
+    ${dims ? `<dt>크기</dt><dd>${dims}<br><span style="color:var(--faint)">${dimsMm}</span></dd>` : ''}
+    <dt>무게(추정)</dt><dd>${Math.round(mass)} g${u.type === 'mod' ? ` · ${MODS[u.mod].label} 전체` : ''}</dd></dl>`;
+  if (u.type === 'mod') h += `<p class="hint">옮기면 <b>${MODS[u.mod].label} 전체</b>가 같이 움직여요.</p>`;
+  if (ro) return h + '</div>';
+  const st = S.prefs.step, sl = st === 1 ? '1칸' : '½칸';
+  h += `<div class="mover">
+    <div class="pad" role="group" aria-label="칸 단위로 옮기기">
+      <span></span><button type="button" data-act="move" data-x="0" data-y="1" data-z="0" aria-label="앞으로">앞<br>↑</button><span></span>
+      <button type="button" data-act="move" data-x="-1" data-y="0" data-z="0" aria-label="왼쪽으로">← 왼</button>
+      <button type="button" class="c" data-act="stepToggle" aria-label="이동 단위 바꾸기">${sl}</button>
+      <button type="button" data-act="move" data-x="1" data-y="0" data-z="0" aria-label="오른쪽으로">오른 →</button>
+      <span></span><button type="button" data-act="move" data-x="0" data-y="-1" data-z="0" aria-label="뒤로">↓<br>뒤</button><span></span>
+    </div>
+    <div class="zcol">
+      <div class="zbtn"><button type="button" data-act="move" data-x="0" data-y="0" data-z="1">↥ 위로</button><button type="button" data-act="move" data-x="0" data-y="0" data-z="-1">↧ 아래로</button></div>
+      <div class="step">단위 <button type="button" class="${st === 1 ? 'on' : ''}" data-act="step" data-v="1">1칸</button><button type="button" class="${st === 0.5 ? 'on' : ''}" data-act="step" data-v="0.5">½칸</button></div>
+      ${off && (off[0] || off[1] || off[2]) ? '<button class="btn sm" type="button" data-act="resetPos">원래 자리로</button>' : ''}
+    </div></div>
+    <p class="hint ex-only" style="margin:0">맥북: 방향키로 앞뒤·좌우, Shift+↑↓로 위아래. 2D 도면에서 끌어서 옮겨도 돼요.</p>`;
+  if (u.type === 'drive' || u.type === 'custom') {
+    const axes = p.shape === 'cyl' ? [['두께', 0, p.len], ['지름', 1, p.r * 2]] : [['가로', 0, p.s[0]], ['세로', 1, p.s[1]], ['높이', 2, p.s[2]]];
+    h += `<div><div class="oq" style="margin:4px 0 6px">크기</div><div class="sz">${axes.map(([l, ax, v]) =>
+      `<span>${l}</span><button type="button" data-act="size" data-ax="${ax}" data-sg="-1" aria-label="${l} 줄이기">−</button><output>${fmtN(v)}칸</output><button type="button" data-act="size" data-ax="${ax}" data-sg="1" aria-label="${l} 늘리기">+</button>`).join('')}</div></div>`;
+    h += `<div class="btnrow">${u.type === 'drive' ? '<button class="btn dng" type="button" data-act="hide">이 부품 빼기</button>' :
+      '<button class="btn" type="button" data-act="dupCustom">복제</button><button class="btn dng" type="button" data-act="delCustom">삭제</button>'}</div>`;
+  }
+  return h + '</div>';
+}
+function htmlParts() {
+  const R = CUR.robot, T = R.T, d = viewDesign(), u = selUnit(), ro = S.readonly;
+  let h = `<section class="sec">${u ? selBoxHtml(u) : '<div class="empty">3D나 도면에서 부품을 누르거나, 아래 목록에서 고르세요.<span class="ex-only"><br>고른 부품은 칸 단위로 옮길 수 있어요.</span></div>'}</section>`;
+  // 목록
+  const item = (p, hidden) => {
+    const on = S.sel && S.sel.key === p.key;
+    const col = p.mod ? `var(--c-${{ launcher: 'launch', intake: 'intake', brain: 'brain' }[p.mod]})` : p.group === 'custom' ? 'var(--c-custom)' :
+      ({ wheel: 'var(--p-wheel)', motor: 'var(--p-motor)', conn: 'var(--p-conn)', shaft: 'var(--p-shaft)' }[(KIND[p.kind] || {}).vis] || 'var(--p-beam)');
+    return `<button type="button" class="pitem${on ? ' on' : ''}${hidden ? ' hid' : ''}" data-act="sel" data-key="${p.key}"><span class="dot" style="background:${col}"></span>${esc(partName(p, T))}${p.edited ? '<span class="m">수정됨</span>' : hidden ? '<span class="m">빠짐</span>' : ''}</button>`;
+  };
+  const drive = R.parts.filter(p => p.group === 'drive').sort((a, b) => DRIVE_ORDER.indexOf(a.kind) - DRIVE_ORDER.indexOf(b.kind));
+  const hid = R.hidden.map(x => Object.assign({ c: [0, 0, 0], group: 'drive' }, x));
+  const grp = (title, list, open, extra) => list.length || extra ? `<details class="pgrp"${open ? ' open' : ''}><summary>${title}<span class="cnt">${list.length}</span></summary>${list.join('')}${extra || ''}</details>` : '';
+  const selIn = g => S.sel && R.byKey.get(S.sel.key) && R.byKey.get(S.sel.key).group === g;
+  h += `<section class="sec"><div class="sec-h"><h3>부품 목록</h3><span class="aside">${R.parts.filter(p => !p.ghost && !p.bag && p.shape !== 'line').length}개</span></div><div class="plist">`;
+  h += grp('드라이빙보드', drive.map(p => item(p)).concat(hid.map(p => item(p, true))), selIn('drive') || (S.sel && hid.some(x => x.key === S.sel.key)));
+  for (const m of Object.keys(MODS)) {
+    const list = R.parts.filter(p => p.mod === m && p.shape !== 'line' && !p.ghost);
+    const bands = R.parts.filter(p => p.mod === m && p.kind === 'band').length;
+    h += grp(MODS[m].label + (list[0] && list[0].ph ? ' · 미정' : ''), list.map(p => item(p)), selIn(m), bands ? `<div class="pitem" style="color:var(--muted)">고무줄 ${bands}개</div>` : '');
+  }
+  h += grp('추가한 부품', R.parts.filter(p => p.group === 'custom').map(p => item(p)), selIn('custom'));
+  h += '</div></section>';
+  // 프레임 크기
+  h += `<section class="sec"><div class="sec-h"><h3>프레임 칸 수</h3><span class="aside mono">${d.frame.w} × ${d.frame.l}칸 · ${mm(d.frame.w)} × ${mm(d.frame.l)}mm</span></div>
+    <p class="hint">사진으로 추정한 값이에요. <b>지안이가 정확한 칸 수를 확인</b>해서 맞춰 주세요. 바꾸면 바퀴·모터·빔 자리가 같이 맞춰져요.</p>
+    <div class="frame sz" style="grid-template-columns:auto 34px 54px 34px auto 34px 54px 34px">
+      <span>가로</span><button type="button" data-act="frame" data-ax="w" data-sg="-1" ${ro ? 'disabled' : ''} aria-label="가로 줄이기">−</button><output>${d.frame.w}칸</output><button type="button" data-act="frame" data-ax="w" data-sg="1" ${ro ? 'disabled' : ''} aria-label="가로 늘리기">+</button>
+      <span>세로</span><button type="button" data-act="frame" data-ax="l" data-sg="-1" ${ro ? 'disabled' : ''} aria-label="세로 줄이기">−</button><output>${d.frame.l}칸</output><button type="button" data-act="frame" data-ax="l" data-sg="1" ${ro ? 'disabled' : ''} aria-label="세로 늘리기">+</button>
+    </div></section>`;
+  if (!ro) {
+    h += `<section class="sec"><div class="sec-h"><h3>부품 추가</h3></div><p class="hint ex-only">사진에 없는 부품이나 새로 달 부품 자리를 잡아요. 로봇 위쪽에 생기면 칸 단위로 옮겨 주세요.</p>
+      <div class="addgrid">${ADDABLE.map(a => `<button class="btn" type="button" data-act="add" data-kind="${a.kind}">+ ${a.label}</button>`).join('')}</div></section>`;
+    const nEd = Object.values(d.edits || {}).filter(Boolean).length;
+    if (nEd) h += `<section class="sec"><div class="sec-h"><h3>드라이빙보드 되돌리기</h3><span class="aside">${nEd}개 고침</span></div><button class="btn" type="button" data-act="resetDrive">사진대로 되돌리기</button></section>`;
+  }
+  return h;
+}
+
+/* --- 경고 탭 --- */
+function metric(k, val, lim, unit, bad) {
+  const pct = Math.min(100, val / lim * 100);
+  return `<div class="met${bad ? ' bad' : ''}"><div class="k">${k}</div><div class="v">${val.toFixed(1)}<small> / ${lim}${unit}</small></div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+}
+function warnCard(w) {
+  const btns = [];
+  if (w.keys && w.keys.length) btns.push(`<button class="btn sm" type="button" data-act="warnSel" data-key="${esc(w.keys[0])}">해당 부품 보기</button>`);
+  if (w.tool === 'startBox' && !S.prefs.startBox) btns.push('<button class="btn sm" type="button" data-act="tool" data-tool="startBox">시작 크기 상자 보기</button>');
+  if (w.go === 'orient') btns.push('<button class="btn sm" type="button" data-act="goOrient">정하러 가기</button>');
+  const lv = { danger: ['lv-danger', '경고'], warn: ['lv-warn', '주의'], info: ['lv-info', '참고'] }[w.level];
+  return `<div class="w ${w.level}"><h5><span class="lv ${lv[0]}">${lv[1]}</span>${esc(w.title)}</h5><p class="ex-only">${esc(w.detail)}</p>${btns.length ? `<div class="btnrow">${btns.join('')}</div>` : ''}</div>`;
+}
+function htmlWarn() {
+  const A = CUR.an, r = A.ratio;
+  const short = A.short * IN_PER, long = A.long * IN_PER, hh = A.dims.h * IN_PER;
+  let h = `<section class="sec"><div class="sec-h"><h3>시작 크기</h3><span class="aside">폭 11 × 길이 20 × 높이 15in</span></div>
+    <div class="metrics">${metric('폭(좁은 쪽)', short, 11, 'in', short > 11)}${metric('길이(긴 쪽)', long, 20, 'in', long > 20)}${metric('높이', hh, 15, 'in', hh > 15)}</div>
+    <div class="metrics" style="margin-top:8px">
+      <div class="met"><div class="k">무게(추정)</div><div class="v">${(A.M / 1000).toFixed(2)}<small> kg</small></div></div>
+      <div class="met${r && Math.abs(r.x) >= 0.4 ? ' bad' : ''}"><div class="k">좌우 쏠림</div><div class="v">${r ? Math.round(Math.abs(r.x) * 100) + '%' : '-'}<small> ${r && Math.abs(r.x) >= 0.05 ? (r.x > 0 ? '오른쪽' : '왼쪽') : ''}</small></div></div>
+      <div class="met${r && Math.abs(r.y) >= 0.45 ? ' bad' : ''}"><div class="k">앞뒤 쏠림</div><div class="v">${r ? Math.round(Math.abs(r.y) * 100) + '%' : '-'}<small> ${r && Math.abs(r.y) >= 0.05 ? (r.y > 0 ? '앞' : '뒤') : ''}</small></div></div>
+    </div><p class="hint ex-only" style="margin-top:8px">무게는 부품 종류로 어림한 값이에요. 쏠림은 무게중심이 바퀴 사이 가운데에서 얼마나 벗어났는지(바퀴까지 거리 대비)예요.</p></section>`;
+  const main = A.warnings.filter(w => w.level !== 'info'), info = A.warnings.filter(w => w.level === 'info');
+  h += `<section class="sec"><div class="sec-h"><h3>자동 경고</h3><span class="aside">${main.length ? main.length + '개' : ''}</span></div>`;
+  h += main.length ? `<div class="wlist">${main.map(warnCard).join('')}</div>` : '<div class="empty">겹침·무게중심·시작 크기·옵션 조합에서 문제를 찾지 못했어요.</div>';
+  h += '</section>';
+  if (info.length) h += `<section class="sec"><div class="sec-h"><h3>참고</h3></div><div class="wlist">${info.map(warnCard).join('')}</div></section>`;
+  h += `<section class="sec"><div class="sec-h"><h3>Level Up 규칙 요약</h3></div><ul class="rules">${RULES.map(([k, v]) => `<li><b>${k}</b> · ${v}</li>`).join('')}</ul>
+    <p class="src">현재 매뉴얼은 v2.1이에요(기획서의 v1.1은 지난 버전). 골 높이·빈백 크기는 실측 전 추정값이라 경고에 쓰지 않았어요. <a href="https://manuals.vex.com/" target="_blank" rel="noopener">VEX 매뉴얼</a></p></section>`;
+  return h;
+}
+
+/* --- 구상안 탭 --- */
+function designSummary(d) {
+  const o = normDesign(d).opts;
+  return [optName('launch', o.launch), optName('intake', o.intake), '브레인 ' + optName('brain', o.brain)].join(' · ');
+}
+function htmlDesigns() {
+  const live = liveDesigns(), dead = Object.entries(S.designs).filter(([, d]) => d && d.deleted);
+  const ro = S.readonly, cmp = S.ui.cmp.filter(id => S.designs[id] && !S.designs[id].deleted);
+  S.ui.cmp = cmp;
+  let h = `<section class="sec"><div class="sec-h"><h3>구상안</h3><span class="aside">${live.length}개</span></div>
+    <p class="hint ex-only">여러 구도를 따로 저장해 두고, 2~3개를 골라 나란히 비교해요. 체크한 구상안이 비교에 들어가요.</p><div class="dlist">`;
+  for (const d of live) {
+    const R = buildRobot(d), A = analyze(R), n = A.nDanger + A.nWarn;
+    const cur = d.id === S.curId;
+    h += `<div class="drow${cur ? ' cur' : ''}">
+      <input type="checkbox" data-act="cmpPick" data-id="${d.id}" ${cmp.includes(d.id) ? 'checked' : ''} aria-label="${esc(d.name)} 비교에 넣기">
+      <span class="nm">${esc(d.name)}${cur ? ' <span class="chip">보는 중</span>' : ''}</span>
+      <span class="lv ${A.nDanger ? 'lv-danger' : n ? 'lv-warn' : 'lv-ok'}">${n ? '경고 ' + n : '문제 없음'}</span>
+      <span class="meta">${esc(designSummary(d))}<br>${esc(whoName(d.updatedBy || d.createdBy))} · ${ago(d.updatedAt || d.createdAt)}</span>`;
+    if (S.ui.renaming === d.id) {
+      h += `<span class="rename"><input type="text" id="rn-${d.id}" value="${esc(d.name)}" maxlength="40" aria-label="새 이름"><button class="btn sm pri" type="button" data-act="renameSave" data-id="${d.id}">저장</button><button class="btn sm" type="button" data-act="renameCancel">취소</button></span>`;
+    } else if (S.ui.confirmDel === d.id) {
+      h += `<span class="confirm">"${esc(d.name)}"을 지울까요? 기록에서 되돌릴 수 있어요. <button class="btn sm dng" type="button" data-act="delYes" data-id="${d.id}">지우기</button><button class="btn sm" type="button" data-act="delNo">취소</button></span>`;
+    } else {
+      h += `<span class="acts">${cur ? '' : `<button class="btn sm" type="button" data-act="openDesign" data-id="${d.id}">열기</button>`}
+        ${ro ? '' : `<button class="btn sm" type="button" data-act="renameStart" data-id="${d.id}">이름 바꾸기</button><button class="btn sm" type="button" data-act="dupDesign" data-id="${d.id}">복제</button>${live.length > 1 ? `<button class="btn sm dng" type="button" data-act="delAsk" data-id="${d.id}">삭제</button>` : ''}`}</span>`;
+    }
+    h += '</div>';
+  }
+  if (!live.length) h += '<div class="empty">저장된 구상안이 없어요.</div>';
+  h += `</div><div class="btnrow" style="margin-top:12px">
+    ${ro ? '' : '<button class="btn pri" type="button" data-act="newDesign">+ 새 구상안</button>'}
+    ${ro || !curDesign() ? '' : '<button class="btn" type="button" data-act="dupDesign">지금 구상안 복제</button>'}
+    <button class="btn" type="button" data-act="compare" ${cmp.length < 2 ? 'disabled' : ''}>나란히 비교 (${cmp.length})</button></div>
+    ${cmp.length < 2 ? '<p class="hint" style="margin-top:8px">비교하려면 2~3개를 체크하세요.</p>' : ''}</section>`;
+  if (dead.length && !ro) h += `<section class="sec"><div class="sec-h"><h3>지운 구상안</h3></div><div class="dlist">${dead.map(([id, d]) =>
+    `<div class="drow"><span></span><span class="nm">${esc(d.name)}</span><button class="btn sm" type="button" data-act="restoreDesign" data-id="${id}">되살리기</button></div>`).join('')}</div></section>`;
+  return h;
+}
+
+/* --- 기록 탭 --- */
+function htmlHist() {
+  const all = S.ui.histAll, d = curDesign();
+  const list = S.history.filter(e => all || e.designId === S.curId).slice(0, 120);
+  const can = !S.readonly && d && undoTarget(S.curId);
+  let h = `<section class="sec"><div class="sec-h"><h3>수정 기록</h3><span class="aside">${all ? '모든 구상안' : esc(d ? d.name : '')}</span></div>
+    <p class="hint ex-only">누가, 무엇을, 언제 바꿨는지 보여요. 지안이가 바꾼 것도 바로 여기에 떠요. 최근 300개까지 남아요.</p>
+    <div class="btnrow" style="margin-bottom:10px"><button class="btn" type="button" data-act="undo" ${can ? '' : 'disabled'}>↶ 마지막 변경 되돌리기</button>
+    <span class="seg"><button type="button" class="${all ? '' : 'on'}" data-act="histAll" data-v="0">이 구상안</button><button type="button" class="${all ? 'on' : ''}" data-act="histAll" data-v="1">전체</button></span></div>`;
+  if (!list.length) h += `<div class="empty">${S.mode === 'loading' ? '기록을 불러오는 중이에요.' : '아직 바뀐 게 없어요. 옵션을 고르거나 부품을 옮기면 여기에 남아요.'}</div>`;
+  else {
+    h += '<div class="hlist">';
+    for (const e of list) {
+      const dn = all && S.designs[e.designId] ? ' · ' + esc(S.designs[e.designId].name) : '';
+      const canR = !S.readonly && e.before && !e.undone;
+      h += `<div class="hrow${e.undone ? ' undone' : ''}">${avatarHtml(e.by)}<span class="t"><b>${esc(whoName(e.by))}</b> · ${esc(e.label)}</span>
+        <span class="m">${ago(e.ts)}${dn}${e.undone ? ' · 되돌려짐' : ''}</span>${canR ? `<button class="btn sm" type="button" data-act="restore" data-id="${e.id}" title="이 변경을 하기 전 상태로 돌아가요">이 변경 전으로</button>` : ''}</div>`;
+    }
+    h += '</div>';
+  }
+  h += '</section>';
+  if (BACKEND.accountHtml) h += BACKEND.accountHtml();
+  if (S.mode === 'shared' && S.meId && S.meId !== 'anon' && !S.readonly) {
+    h += `<section class="sec"><div class="nick"><span>기록에 보일 내 이름</span><input type="text" id="nickIn" maxlength="16" value="${esc((S.people[S.meId] && S.people[S.meId].nick) || '')}" placeholder="${esc(myLabel() || '예: 지안')}"><button class="btn sm" type="button" data-act="nickSave">저장</button></div></section>`;
+  }
+  return h;
+}
+
+/* ---------- 동작 ---------- */
+function setOpt(k, v) {
+  if (!canEditNow()) return;
+  const d = curDesign(), old = d.opts[k] == null ? null : d.opts[k];
+  if (old === v) return;
+  const patch = { opts: { [k]: v } }; let note = '';
+  if (k === 'launch') {
+    if (v === 'sling_down' && d.opts.rail < 55) { patch.opts.rail = 70; note = ' (레일 70°)'; }
+    if (v === 'sling_back' && d.opts.rail > 65) { patch.opts.rail = 40; note = ' (레일 40°)'; }
+  }
+  const title = k === 'dir' && d.opts.launch === 'lift' ? '넣는 방향' : OPTS[k].title;
+  commit(patch, { label: `${title}: ${optName(k, old)} → ${optName(k, v)}${note}`, kind: 'opt' });
+  if (note) toast(`레일 각도를 ${patch.opts.rail}°로 맞췄어요`);
+}
+function setOrient(k, v) {
+  if (!canEditNow()) return;
+  const d = curDesign(), o = d.orient || {};
+  if (o[k] === v) return;
+  const nm = k === 'top' ? `위 면: ${v}면` : `앞: 끝 ${v === 'end1' ? 1 : 2}`;
+  commit({ orient: { [k]: v } }, { label: (o[k] ? '바꿈 · ' : '정함 · ') + nm, kind: 'orient' });
+  const n = curDesign().orient;
+  if (n.top && n.front && !(o.top && o.front)) { S.ui.orientOpen = false; renderPanel(); toast('앞·위를 정했어요. 부품 이름이 "앞 왼쪽"처럼 바뀌었어요'); }
+}
+function commitMove(u, vec) {
+  if (!u || !canEditNow()) return;
+  if (u.hidden) return toast('빼 둔 부품은 옮길 수 없어요');
+  const d = curDesign(), T = orientT(normDesign(d)), R = CUR.robot;
+  const name = unitName(u, R);
+  let patch;
+  if (u.type === 'mod') {
+    const m = (d.mods && d.mods[u.mod]) || {};
+    patch = { mods: { [u.mod]: { dx: r2((m.dx || 0) + vec[0]), dy: r2((m.dy || 0) + vec[1]), dz: r2((m.dz || 0) + vec[2]) } } };
+  } else if (u.type === 'drive') {
+    const e = (d.edits && d.edits[u.key]) || {}, pv = T.inv(vec[0], vec[1], vec[2]);
+    patch = { edits: { [u.key]: Object.assign({}, e, { dx: r2((e.dx || 0) + pv[0]), dy: r2((e.dy || 0) + pv[1]), dz: r2((e.dz || 0) + pv[2]), hidden: false }) } };
+  } else {
+    const a = d.added[u.cid]; if (!a) return;
+    patch = { added: { [u.cid]: Object.assign({}, a, { c: [r2(a.c[0] + vec[0]), r2(a.c[1] + vec[1]), r2(a.c[2] + vec[2])] }) } };
+  }
+  commit(patch, { ckey: 'mv:' + u.id, vec, labelFn: acc => `${name} 이동 · ${vecWords(acc)}` });
+}
+function moveSel(vec) { commitMove(selUnit(), vec); }
+function resetPos() {
+  const u = selUnit(); if (!u || !canEditNow()) return;
+  const d = curDesign(), name = unitName(u, CUR.robot);
+  if (u.type === 'mod') commit({ mods: { [u.mod]: { dx: 0, dy: 0, dz: 0 } } }, { label: `${name} 원래 자리로` });
+  else if (u.type === 'drive') commit({ edits: { [u.key]: Object.assign({}, d.edits[u.key] || {}, { dx: 0, dy: 0, dz: 0 }) } }, { label: `${name} 원래 자리로` });
+}
+function resizeSel(ax, sg) {
+  const u = selUnit(); if (!u || !canEditNow()) return;
+  const d = curDesign(), R = CUR.robot, p = R.byKey.get(S.sel.key), st = S.prefs.step;
+  if (!p) return;
+  const axName = p.shape === 'cyl' ? ['두께', '지름'][ax] : ['가로', '세로', '높이'][ax];
+  const cur = p.shape === 'cyl' ? (ax === 0 ? p.len : p.r * 2) : p.s[ax];
+  const nv = r2(cur + sg * st);
+  if (nv < 0.5) return toast('더 줄일 수 없어요');
+  const name = unitName(u, R), lf = (f, t) => `${name} ${axName} ${fmtN(f)} → ${fmtN(t)}칸`;
+  if (u.type === 'drive') {
+    const e = d.edits[u.key] || {}, f = ['dw', 'dl', 'dh'][ax];
+    commit({ edits: { [u.key]: Object.assign({}, e, { [f]: r2((e[f] || 0) + sg * st) }) } }, { ckey: 'sz:' + u.id + ax, from: cur, to: nv, labelFn: lf });
+  } else if (u.type === 'custom') {
+    const a = d.added[u.cid], s = a.s.slice();
+    if (p.shape === 'cyl' && ax === 1) { s[1] = nv; s[2] = nv; } else s[ax] = nv;
+    commit({ added: { [u.cid]: Object.assign({}, a, { s }) } }, { ckey: 'sz:' + u.id + ax, from: cur, to: nv, labelFn: lf });
+  }
+}
+function addPart(kind) {
+  if (!canEditNow()) return;
+  const def = ADDABLE.find(a => a.kind === kind); if (!def) return;
+  const d = curDesign(), n = Object.values(d.added || {}).filter(a => a && a.kind === kind).length + 1;
+  const id = newId('p'), name = `${def.label} ${n}`;
+  const z = r2(CUR.an.bb.max[2] + def.s[2] / 2 + 1);
+  commit({ added: { [id]: { kind, name, c: [0, 0, z], s: def.s.slice() } } }, { label: `${name} 추가` });
+  selectKey('C:' + id, 'list');
+}
+function frameStep(ax, sg) {
+  if (!canEditNow()) return;
+  const d = curDesign(), f = d.frame, lim = ax === 'w' ? [14, 24] : [19, 32];
+  const nv = clamp(f[ax] + sg, lim[0], lim[1]);
+  if (nv === f[ax]) return toast(ax === 'w' ? '가로는 14~24칸까지 바꿀 수 있어요' : '세로는 19~32칸까지 바꿀 수 있어요');
+  const nf = Object.assign({}, f, { [ax]: nv });
+  commit({ frame: { [ax]: nv } }, { ckey: 'frame', from: `${f.w}×${f.l}`, to: `${nf.w}×${nf.l}`, labelFn: (a, b) => `프레임 칸 수 ${a} → ${b}칸` });
+}
+function onPanelClick(e) {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  const a = b.dataset.act, d = curDesign();
+  switch (a) {
+    case 'opt': setOpt(b.dataset.k, b.dataset.v === '' ? null : b.dataset.v); break;
+    case 'orient': setOrient(b.dataset.k, b.dataset.v); break;
+    case 'orientEdit': S.ui.orientOpen = true; renderPanel(); break;
+    case 'orientDone': S.ui.orientOpen = false; renderPanel(); break;
+    case 'goOrient': S.ui.orientOpen = true; setTab('combo', true); break;
+    case 'sel': selectKey(b.dataset.key, 'list'); break;
+    case 'move': moveSel([+b.dataset.x, +b.dataset.y, +b.dataset.z].map(v => v * S.prefs.step)); break;
+    case 'step': S.prefs.step = +b.dataset.v; savePrefs(); renderPanel(); break;
+    case 'stepToggle': S.prefs.step = S.prefs.step === 1 ? 0.5 : 1; savePrefs(); renderPanel(); break;
+    case 'resetPos': resetPos(); break;
+    case 'size': resizeSel(+b.dataset.ax, +b.dataset.sg); break;
+    case 'hide': { const u = selUnit(); if (!u || !canEditNow()) break; commit({ edits: { [u.key]: Object.assign({}, d.edits[u.key] || {}, { hidden: true }) } }, { label: `${unitName(u, CUR.robot)} 뺌` }); break; }
+    case 'unhide': { const u = selUnit(); if (!u || !canEditNow()) break; commit({ edits: { [u.key]: Object.assign({}, d.edits[u.key] || {}, { hidden: false }) } }, { label: `${unitName(u, CUR.robot)} 다시 넣음` }); break; }
+    case 'delCustom': { const u = selUnit(); if (!u || !canEditNow()) break; const nm = unitName(u, CUR.robot); commit({ added: { [u.cid]: null } }, { label: `${nm} 삭제` }); selectKey(null, 'list'); break; }
+    case 'dupCustom': { const u = selUnit(); if (!u || !canEditNow()) break; const a = d.added[u.cid], id = newId('p'); const nm = a.name + ' 복사';
+      commit({ added: { [id]: Object.assign(clone(a), { name: nm, c: [r2(a.c[0] + 1), a.c[1], a.c[2]] }) } }, { label: `${nm} 추가` }); selectKey('C:' + id, 'list'); break; }
+    case 'add': addPart(b.dataset.kind); break;
+    case 'frame': frameStep(b.dataset.ax, +b.dataset.sg); break;
+    case 'resetDrive': { if (!canEditNow()) break; const ed = {}; Object.keys(d.edits || {}).forEach(k => { ed[k] = null; }); commit({ edits: ed }, { label: '드라이빙보드를 사진대로 되돌림' }); break; }
+    case 'go': setTab(b.dataset.tab, true); break;
+    case 'pickClose': S.pickOpen = false; renderPick(); break;
+    case 'warnSel': selectKey(b.dataset.key, 'list'); S.pickOpen = true; renderPick(); if (isPhone()) window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    case 'tool': if (b.dataset.tool === 'startBox') { S.prefs.startBox = true; savePrefs(); refresh(); } break;
+    case 'newDesign': createDesign(null); break;
+    case 'dupDesign': createDesign(b.dataset.id || S.curId); break;
+    case 'openDesign': openDesign(b.dataset.id); toast(`"${S.designs[b.dataset.id].name}"을 열었어요`); break;
+    case 'renameStart': S.ui.renaming = b.dataset.id; S.ui.confirmDel = null; renderPanel(); { const i = document.getElementById('rn-' + b.dataset.id); if (i) { i.focus(); i.select(); } } break;
+    case 'renameSave': saveRename(b.dataset.id); break;
+    case 'renameCancel': S.ui.renaming = null; renderPanel(); break;
+    case 'delAsk': S.ui.confirmDel = b.dataset.id; S.ui.renaming = null; renderPanel(); break;
+    case 'delNo': S.ui.confirmDel = null; renderPanel(); break;
+    case 'delYes': { const id = b.dataset.id, nm = S.designs[id] && S.designs[id].name; S.ui.confirmDel = null; designPatch(id, { deleted: true }, `구상안 삭제 · ${nm}`); toast(`"${nm}"을 지웠어요. 기록에서 되돌릴 수 있어요`); break; }
+    case 'restoreDesign': { const id = b.dataset.id, nm = S.designs[id] && S.designs[id].name; designPatch(id, { deleted: false }, `구상안 되살림 · ${nm}`); break; }
+    case 'compare': openCompare(); break;
+    case 'undo': undoLast(); break;
+    case 'restore': { const en = S.history.find(x => x.id === b.dataset.id); if (en) restoreEntry(en, true); break; }
+    case 'histAll': S.ui.histAll = b.dataset.v === '1'; renderPanel(); break;
+    case 'nickSave': saveNick(); break;
+    case 'logout': if (BACKEND.logout) BACKEND.logout(); break;
+    case 'login': if (BACKEND.login) BACKEND.login(); break;
+    case 'reload': location.reload(); break;
+  }
+}
+function saveRename(id) {
+  const i = document.getElementById('rn-' + id); if (!i) return;
+  const v = i.value.trim().slice(0, 40), old = S.designs[id] && S.designs[id].name;
+  S.ui.renaming = null;
+  if (v && v !== old) designPatch(id, { name: v }, `이름 바꿈 · ${old} → ${v}`); else renderPanel();
+}
+function saveNick() {
+  const i = document.getElementById('nickIn'); if (!i || !S.db || !S.meId) return;
+  const v = i.value.trim().slice(0, 16);
+  S.people[S.meId] = Object.assign({}, S.people[S.meId], { nick: v });
+  track(enqueue('people/' + S.meId, () => BACKEND.saveNick(S.meId, v)));
+  i.blur(); renderPanel(); toast(v ? `기록에 "${v}"로 보여요` : '이름을 지웠어요');
+}
+function onPanelInput(e) {
+  const t = e.target;
+  if (t.matches('input[type=range][data-sl]')) {
+    const k = t.dataset.sl, v = +t.value;
+    S.preview = { opts: { [k]: v } };
+    const out = document.getElementById('out-' + k);
+    if (out) out.textContent = v + (k === 'bands' ? '개' : '°');
+    refresh({ panel: false });
+  }
+}
+function onPanelChange(e) {
+  const t = e.target;
+  if (t.matches('input[type=range][data-sl]')) {
+    const k = t.dataset.sl, v = +t.value;
+    S.preview = null;
+    const d = curDesign();
+    if (!d || !canEditNow()) { refresh(); return; }
+    const old = d.opts[k];
+    if (old === v) { refresh(); return; }
+    const L = d.opts.launch;
+    const nm = k === 'bands' ? '고무줄' : L === 'catapult' ? '발사 각도' : '레일 각도', u = k === 'bands' ? '개' : '°';
+    commit({ opts: { [k]: v } }, { ckey: 'opt:' + k, from: old, to: v, labelFn: (a, b) => `${nm} ${a}${u} → ${b}${u}` });
+  } else if (t.matches('input[type=checkbox][data-act="cmpPick"]')) {
+    const id = t.dataset.id;
+    S.ui.cmp = S.ui.cmp.filter(x => x !== id);
+    if (t.checked) { S.ui.cmp.push(id); if (S.ui.cmp.length > 3) S.ui.cmp.shift(); }
+    renderPanel();
+  }
+}
+function onPanelKey(e) {
+  if (e.key === 'Enter' && e.target.id && e.target.id.startsWith('rn-')) { e.preventDefault(); saveRename(e.target.id.slice(3)); }
+  if (e.key === 'Escape' && e.target.id && e.target.id.startsWith('rn-')) { S.ui.renaming = null; renderPanel(); }
+  if (e.key === 'Enter' && e.target.id === 'nickIn') { e.preventDefault(); saveNick(); }
+}
+
+/* ---------- 나란히 비교 ---------- */
+function miniTop(R) {
+  const bb = allBB(R), m = 1.5;
+  const vb = [bb.min[0] - m, -(bb.max[1] + m), bb.max[0] - bb.min[0] + 2 * m, bb.max[1] - bb.min[1] + 2 * m];
+  const parts = R.parts.slice().sort((a, b) => a.bb.max[2] - b.bb.max[2]).filter(p => p.shape !== 'line' && !p.ghost)
+    .map(p => `<rect class="pt ${visCls(p)}" x="${f2(p.bb.min[0])}" y="${f2(-p.bb.max[1])}" width="${f2(p.bb.max[0] - p.bb.min[0])}" height="${f2(p.bb.max[1] - p.bb.min[1])}"/>`).join('');
+  return `<svg class="d2" viewBox="${vb.map(f2).join(' ')}" style="width:100%;height:100%;background:var(--paper)">${parts}</svg>`;
+}
+function openCompare() {
+  const ids = S.ui.cmp.filter(id => S.designs[id] && !S.designs[id].deleted);
+  if (ids.length < 2) return toast('비교할 구상안을 2개 이상 체크하세요');
+  const cols = ids.map(id => { const d = S.designs[id], R = buildRobot(d), A = analyze(R); return { id, d: normDesign(d), R, A }; });
+  const rows = [
+    ['발사 방식', c => optName('launch', c.d.opts.launch)],
+    ['발사 방향', c => optName('dir', c.d.opts.dir)],
+    ['인테이커', c => optName('intake', c.d.opts.intake)],
+    ['브레인', c => optName('brain', c.d.opts.brain)],
+    ['고무줄', c => c.d.opts.launch && c.d.opts.launch !== 'lift' ? c.d.opts.bands + '개' : '-'],
+    ['각도', c => c.d.opts.launch && c.d.opts.launch !== 'lift' ? c.d.opts.rail + '°' : '-'],
+    ['당기는 장치', c => SLING(c.d.opts.launch) ? optName('pull', c.d.opts.pull) : '-'],
+    ['앞·위', c => c.d.orient.top && c.d.orient.front ? `${c.d.orient.top}면 위 · 끝 ${c.d.orient.front === 'end1' ? 1 : 2} 앞` : '미정'],
+    ['프레임', c => `${c.d.frame.w}×${c.d.frame.l}칸`],
+    ['크기 (폭×길이×높이)', c => `${inch(c.A.short)} × ${inch(c.A.long)} × ${inch(c.A.dims.h)}in`, true],
+    ['무게(추정)', c => (c.A.M / 1000).toFixed(2) + 'kg', true],
+    ['무게중심 쏠림', c => c.A.ratio ? `좌우 ${Math.round(Math.abs(c.A.ratio.x) * 100)}% · 앞뒤 ${Math.round(Math.abs(c.A.ratio.y) * 100)}%` : '-', true],
+    ['경고', c => (c.A.nDanger + c.A.nWarn) ? c.A.warnings.filter(w => w.level !== 'info').map(w => w.title).join(' / ') : '없음'],
+  ];
+  let h = `<div class="cmp"><div class="cmp-cols">${cols.map(c => `<div class="cmp-col"><h4>${esc(c.d.name)}</h4><div class="img" data-img="${c.id}">${miniTop(c.R)}</div></div>`).join('')}</div>
+    <div class="cmp-tab"><table><tbody>${rows.map(([k, f, mono]) => {
+      const vals = cols.map(f), diff = new Set(vals).size > 1;
+      return `<tr class="${diff ? 'diff' : ''}"><th>${k}</th>${vals.map(v => `<td class="${mono ? 'mono' : ''}">${esc(v)}</td>`).join('')}</tr>`;
+    }).join('')}</tbody></table></div>
+    <p class="hint">파란 줄은 구상안끼리 다른 항목이에요.</p>
+    <div class="btnrow">${cols.map(c => `<button class="btn sm" type="button" data-act="openFromCmp" data-id="${c.id}">${esc(c.d.name)} 열기</button>`).join('')}</div></div>`;
+  els.sheetBody.innerHTML = h;
+  els.sheet.hidden = false;
+  els.sheetClose.focus();
+  requestAnimationFrame(() => {
+    for (const c of cols) {
+      const url = snapshot3D(c.R, c.A);
+      const box = els.sheetBody.querySelector(`[data-img="${c.id}"]`);
+      if (url && box) box.innerHTML = `<img src="${url}" alt="${esc(c.d.name)} 3D 모습">`;
+    }
+  });
+}
+function closeCompare() { els.sheet.hidden = true; els.sheetBody.innerHTML = ''; }
+
+/* ---------- 알림 ---------- */
+function toast(msg, html) {
+  const t = document.createElement('div'); t.className = 'toast';
+  if (html) t.innerHTML = msg; else t.textContent = msg;
+  els.toasts.appendChild(t);
+  while (els.toasts.children.length > 3) els.toasts.firstChild.remove();
+  setTimeout(() => t.remove(), 3400);
+}
+
+/* =========================================================
+   설치형 앱: 오프라인 캐시 등록 · 새 버전 알림 · "앱 설치" 버튼
+   ========================================================= */
+(function () {
+  const secure = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
+  if ('serviceWorker' in navigator && secure) {
+    const sw = navigator.serviceWorker;
+    let ctl = sw.controller;
+    // 새 버전이 설치돼 화면을 넘겨받으면 알려 준다 (처음 설치할 때는 빼고)
+    sw.addEventListener('controllerchange', () => {
+      const had = ctl; ctl = sw.controller;
+      if (!had || typeof S !== 'object') return;
+      S.updateReady = true;
+      if (typeof renderChrome === 'function' && els && els.app) renderChrome();
+    });
+    window.addEventListener('load', () => {
+      sw.register('./sw.js').then(reg => {
+        // 앱을 오래 켜 둬도 다시 볼 때 새 버전이 있는지 확인 (10분에 한 번까지)
+        let last = Date.now();
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState !== 'visible' || Date.now() - last < 600000) return;
+          last = Date.now(); reg.update().catch(() => {});
+        });
+      }).catch(() => {});
+    });
+  }
+  let deferred = null;
+  const btn = () => document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); deferred = e;
+    const b = btn(); if (b) b.hidden = false;
+  });
+  window.addEventListener('appinstalled', () => {
+    deferred = null; const b = btn(); if (b) b.hidden = true;
+    if (typeof toast === 'function') toast('앱을 설치했어요. 이제 아이콘으로 열 수 있어요');
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest || !e.target.closest('#installBtn') || !deferred) return;
+    deferred.prompt();
+    deferred.userChoice.finally(() => { deferred = null; const b = btn(); if (b) b.hidden = true; });
+  });
+})();
+
+/* =========================================================
+   시작 · 이벤트 연결
+   ========================================================= */
+let BOOTED = false;
+function boot(hotData) {
+  if (BOOTED) return; BOOTED = true;
+  cacheEls();
+  S.prefs = loadPrefs();
+  hotData = hotData || {};
+  if (hotData.tab) S.tab = hotData.tab;
+  if (hotData.curId) S.prefs.lastDesign = hotData.curId;
+  setSync('loading');
+  init3D();
+  bindUI();
+  refresh();
+  if (hotData.cam) Object.assign(V3.cam, hotData.cam); else fitCam(true);
+  try {
+    const hot = window.claude && window.claude.hot;
+    if (hot && typeof hot.snapshot === 'function') hot.snapshot(() => ({ curId: S.curId, tab: S.tab, cam: Object.assign({}, V3.cam, { tgt: V3.cam.tgt.slice() }) }));
+  } catch (e) {}
+  initBackend();
+}
+function bindUI() {
+  els.pbody.addEventListener('click', onPanelClick);
+  els.pbody.addEventListener('input', onPanelInput);
+  els.pbody.addEventListener('change', onPanelChange);
+  els.pbody.addEventListener('keydown', onPanelKey);
+  els.pbody.addEventListener('focusout', () => setTimeout(() => { if (panelDirty) renderPanelSafe(); }, 0));
+  els.pick.addEventListener('click', onPanelClick);
+  els.banner.addEventListener('click', onPanelClick);
+  els.ptabs.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab, false); });
+  els.explainToggle.addEventListener('change', () => { S.prefs.explain = els.explainToggle.checked; savePrefs(); renderChrome(); render2D(); request3D(); });
+  els.designPick.addEventListener('click', () => setTab('designs', true));
+  els.viewSeg.addEventListener('click', e => {
+    const b = e.target.closest('[data-view]'); if (!b) return;
+    S.prefs.view = b.dataset.view; savePrefs(); renderChrome();
+    requestAnimationFrame(() => { resize3D(); render2D(); });
+  });
+  els.sideSeg.addEventListener('click', e => {
+    const b = e.target.closest('[data-sv]'); if (!b) return;
+    S.prefs.sv = b.dataset.sv; savePrefs(); renderChrome(); requestAnimationFrame(render2D);
+  });
+  els.startBoxBtn.addEventListener('click', () => { S.prefs.startBox = !S.prefs.startBox; savePrefs(); refresh({ panel: false }); });
+  els.bigBtn.addEventListener('click', () => { S.prefs.big = !S.prefs.big; savePrefs(); renderChrome(); requestAnimationFrame(() => { resize3D(); render2D(); }); });
+  bind2D(els.svgTop, 'top');
+  bind2D(els.svgSide, 'side');
+  els.sheetClose.addEventListener('click', closeCompare);
+  els.sheet.addEventListener('click', e => {
+    if (e.target === els.sheet) return closeCompare();
+    const b = e.target.closest('[data-act="openFromCmp"]');
+    if (b) { closeCompare(); openDesign(b.dataset.id); toast(`"${S.designs[b.dataset.id].name}"을 열었어요`); }
+  });
+  document.addEventListener('keydown', onKey);
+  let lastW = window.innerWidth;
+  window.addEventListener('resize', () => {
+    const w = window.innerWidth, cross = [760, 1100].some(bp => (lastW < bp) !== (w < bp));
+    lastW = w;
+    if (cross) renderChrome();
+    requestAnimationFrame(() => { resize3D(); render2D(); });
+  });
+  const mq = window.matchMedia && matchMedia('(prefers-color-scheme: dark)');
+  if (mq && mq.addEventListener) mq.addEventListener('change', () => { applyTheme3D(); refresh({ panel: false }); });
+  new MutationObserver(() => { applyTheme3D(); refresh({ panel: false }); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  setInterval(() => { if (S.tab === 'hist' || S.tab === 'designs') renderPanelSafe(); }, 60000);
+}
+function onKey(e) {
+  const t = e.target, tag = (t && t.tagName || '').toLowerCase();
+  if (!els.sheet.hidden) { if (e.key === 'Escape') closeCompare(); return; }
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || (t && t.isContentEditable)) return;
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undoLast(); return; }
+  if (e.key === 'Escape') { selectKey(null, 'view'); return; }
+  if (!S.sel) return;
+  const st = S.prefs.step; let v = null;
+  if (e.key === 'ArrowUp') v = e.shiftKey ? [0, 0, st] : [0, st, 0];
+  else if (e.key === 'ArrowDown') v = e.shiftKey ? [0, 0, -st] : [0, -st, 0];
+  else if (e.key === 'ArrowLeft') v = [-st, 0, 0];
+  else if (e.key === 'ArrowRight') v = [st, 0, 0];
+  else if (e.key === 'PageUp') v = [0, 0, st];
+  else if (e.key === 'PageDown') v = [0, 0, -st];
+  if (v) { e.preventDefault(); moveSel(v); }
+}
+(function start() {
+  const go = () => {
+    const hot = window.claude && window.claude.hot;
+    try {
+      if (hot && typeof hot.ready === 'function') { hot.ready(boot); setTimeout(() => boot((hot && hot.data) || {}), 1500); return; }
+    } catch (e) {}
+    boot((hot && hot.data) || {});
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+})();
+
+</script>
+</body>
+</html>
