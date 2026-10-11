@@ -36,8 +36,8 @@ const COMBOS = [
     title: '투석기에 고무줄이 많아요',
     detail: '고무줄이 많으면 팔이 멈춤대에 세게 부딪혀 부품이 휘거나 빠질 수 있어요. 멈춤대에 고무 같은 완충재를 붙이거나 고무줄을 줄여요.' },
   { id: 'slipBand', level: 'warn', when: o => SLING(o.launch) && o.pull === 'slip' && o.bands >= 6,
-    title: '슬립기어 + 고무줄 많음',
-    detail: '고무줄 힘이 세면 슬립기어 이빨이 미끄러지거나 모터가 멈출 수 있어요. 고무줄을 줄이거나 다른 당기는 장치를 써요.' },
+    title: '캠(크랭크) + 고무줄 많음',
+    detail: '고무줄 힘이 세면 크랭크가 포켓을 끌다가 모터가 멈출 수 있어요. 기어로 힘을 키우거나(12T → 36T) 고무줄을 줄여요.' },
   { id: 'brainTop', level: 'warn', when: o => o.brain === 'top' && !!o.launch,
     title: '브레인을 위에 두면 발사부와 자리를 다퉈요',
     detail: '발사부가 쓰는 윗면을 브레인이 차지하고, 무게중심도 높아져요. 옆면이나 뒤쪽을 먼저 검토해 보세요.' },
@@ -151,6 +151,14 @@ function analyze(robot) {
   const air = wheels.filter((p, i) => bottoms[i] > lowB + 0.25);
   if (air.length) W.push({ id: 'air', level: 'warn', title: `바닥에 안 닿는 바퀴가 ${air.length}개 있어요`,
     detail: air.map(p => partName(p, T)).join(', ') + '. 바퀴 높이를 다른 바퀴와 맞춰 주세요.', keys: air.map(p => p.key) });
+
+  // 모터 개수: 대회 규칙 R9 (스마트 모터 6개까지)
+  const motors = solid.filter(p => ['motor', 'launchMotor', 'liftMotor', 'intakeMotor', 'cMotor'].includes(p.kind));
+  if (motors.length > 6) W.push({ id: 'motors', level: 'danger', title: `모터가 ${motors.length}개예요 (규칙상 6개까지)`,
+    detail: '대회 규칙(R9)상 스마트 모터는 6개까지 달 수 있어요. 연결하지 않은 모터도 세요. 바퀴 모터를 2개로 줄이거나(체인·기어로 앞뒤 바퀴 묶기) 장치를 합쳐 보세요.',
+    keys: motors.map(p => p.key) });
+  if (SLING(o.launch) && o.pull !== 'slip' && motors.length >= 6) W.push({ id: 'latchFree', level: 'warn', title: '걸쇠를 풀 모터가 없어요',
+    detail: `모터 ${motors.length}개를 다 써서 걸쇠를 따로 풀 모터가 없어요. 같은 발사부 모터로 풀리는 장치를 만들거나, 공압 피스톤(VEX IQ 공압 키트)을 쓰거나, 걸쇠가 필요 없는 캠(크랭크) 방식으로 바꿔 보세요.`, combo: true });
 
   // 옵션 조합
   for (const c of COMBOS) if (c.when(o)) W.push({ id: c.id, level: c.level, title: c.title, detail: c.detail, combo: true });

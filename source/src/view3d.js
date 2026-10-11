@@ -189,9 +189,25 @@ function disposeTree(g) {
   g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   while (g.children.length) g.remove(g.children[0]);
 }
-function fillRobotGroup(group, robot) {
+/* 만드는 법에서 지금 단계가 아닌 부품은 흐리게 그릴 재질 */
+function dimMaterials(M) {
+  const dim = m => { const c = m.clone(); c.transparent = true; c.opacity = (m.transparent ? m.opacity : 1) * 0.18; c.depthWrite = false; return c; };
+  const D = {};
+  for (const [k, v] of Object.entries(M)) {
+    if (v && v.isMaterial) D[k] = dim(v);
+    else if (v && typeof v === 'object') { D[k] = {}; for (const [k2, v2] of Object.entries(v)) D[k][k2] = v2 && v2.isMaterial ? dim(v2) : v2; }
+    else D[k] = v;
+  }
+  return D;
+}
+function fillRobotGroup(group, robot, focus) {
   disposeTree(group);
-  for (const p of robot.parts) group.add(meshFor(p, V3.mats));
+  const D = focus ? (V3.dimMats || (V3.dimMats = dimMaterials(V3.mats))) : null;
+  for (const p of robot.parts) {
+    const faded = D && !focus.has(p.key), obj = meshFor(p, faded ? D : V3.mats);
+    if (faded) obj.traverse(o => { o.castShadow = false; });
+    group.add(obj);
+  }
 }
 
 /* ---------- 겹쳐 그리기: 선택·겹침·무게중심·시작 상자·앞 화살표 ---------- */
@@ -210,7 +226,8 @@ function outlineFor(p, color, opacity) {
 function update3D() {
   if (!V3.ok) return;
   const R = CUR.robot, A = CUR.an;
-  if (V3.lastRobot !== R) { fillRobotGroup(V3.root, R); V3.lastRobot = R; }
+  const fsig = S.buildFocus ? S.buildFocus.join(',') : '';
+  if (V3.lastRobot !== R || V3.lastFocus !== fsig) { fillRobotGroup(V3.root, R, fsig ? new Set(S.buildFocus) : null); V3.lastRobot = R; V3.lastFocus = fsig; }
   const over = V3.over;
   over.children.forEach(o => { if (o.geometry) o.geometry.dispose(); if (o.material && !o.material.shared) o.material.dispose && o.material.dispose(); });
   disposeTree(over);
@@ -220,8 +237,17 @@ function update3D() {
   if (u) for (const p of R.parts) if (partInUnit(p, u)) over.add(outlineFor(p, 0x1b6dd0));
   // 다른 사람이 고른 부품
   for (const pr of peerSelections()) for (const p of R.parts) if (p.key === pr.key) over.add(outlineFor(p, new THREE.Color(pr.color || '#7a7a7a'), 0.9));
+  // 만드는 법: 지금 단계 부품 (초록 테두리 + 옅은 상자)
+  if (S.buildFocus) {
+    const fm = V3.focusMat || (V3.focusMat = Object.assign(new THREE.MeshBasicMaterial({ color: 0x1f9d55, transparent: true, opacity: 0.16, depthTest: false, depthWrite: false }), { shared: true }));
+    for (const k of S.buildFocus) {
+      const p = R.byKey.get(k); if (!p) continue;
+      over.add(outlineFor(p, 0x1f9d55));
+      if (p.shape !== 'line') { const g = new THREE.Mesh(boxGeo([p.s[0] + 0.3, p.s[1] + 0.3, p.s[2] + 0.3]), fm); g.renderOrder = 9; over.add(place(g, p)); }
+    }
+  }
   // 겹침
-  for (const k of A.bad) { const p = R.byKey.get(k); if (p) over.add(outlineFor(p, 0xd23b3b)); }
+  if (!S.buildFocus) for (const k of A.bad) { const p = R.byKey.get(k); if (p) over.add(outlineFor(p, 0xd23b3b)); }
   // 무게중심
   const com = t3(A.com);
   const ballMat = new THREE.MeshBasicMaterial({ color: ink, depthTest: false });
@@ -277,6 +303,23 @@ function fitCam(keepAngles, th, ph) {
   const f = fitR(bb, th == null ? V3.cam.th : th, ph == null ? V3.cam.ph : ph, V3.camera ? V3.camera.aspect : 1);
   if (keepAngles) { V3.cam.tgt = f.tgt; V3.cam.r = f.r; request3D(); }
   return f;
+}
+/* 만드는 법: 고른 부품들이 화면에 크게 보이게 (각도는 그대로) */
+function focusCam(keys) {
+  if (!V3.ok || !CUR.robot) return;
+  const bb = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
+  for (const k of keys) {
+    const p = CUR.robot.byKey.get(k); if (!p) continue;
+    for (let i = 0; i < 3; i++) { bb.min[i] = Math.min(bb.min[i], p.bb.min[i]); bb.max[i] = Math.max(bb.max[i], p.bb.max[i]); }
+  }
+  if (!isFinite(bb.min[0])) return;
+  for (let i = 0; i < 3; i++) {   // 너무 가까이 가지 않게 최소 8칸, 둘레 2칸 여유
+    const c = (bb.min[i] + bb.max[i]) / 2, h = Math.max(4, (bb.max[i] - bb.min[i]) / 2 + 2);
+    bb.min[i] = c - h; bb.max[i] = c + h;
+  }
+  V3.userMoved = true;
+  const f = fitR(bb, V3.cam.th, V3.cam.ph, V3.camera ? V3.camera.aspect : 1);
+  animCam({ th: V3.cam.th, ph: V3.cam.ph, r: f.r, tgt: f.tgt });
 }
 function presetCam(name) {
   V3.userMoved = true;

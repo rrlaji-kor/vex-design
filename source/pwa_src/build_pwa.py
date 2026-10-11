@@ -4,7 +4,7 @@ import hashlib, json, pathlib, re, shutil, subprocess, sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC, PS, OUT, NM = ROOT / 'src', ROOT / 'pwa_src', ROOT / 'pwa', ROOT / 'testenv' / 'node_modules'
 OWNER = 'rrlaji-kor'
-JS = ['data.js', 'model.js', 'analysis.js', 'view3d.js', 'view2d.js', 'store.js', 'backend_fb.js', 'ui.js', 'share.js', 'pwa.js', 'main.js']
+JS = ['data.js', 'model.js', 'analysis.js', 'view3d.js', 'view2d.js', 'store.js', 'backend_fb.js', 'ui.js', 'guide.js', 'share.js', 'pwa.js', 'main.js']
 if OUT.exists(): shutil.rmtree(OUT)
 (OUT / 'vendor').mkdir(parents=True)
 strip = lambda t: re.sub(r'\n?//# sourceMappingURL=\S+\s*$', '\n', t)
@@ -74,7 +74,7 @@ for p in sorted(OUT.rglob('*')):
     if p.is_file(): h.update(p.read_bytes())
 sw = (PS / 'sw.js').read_text().replace('__VERSION__', h.hexdigest()[:10]).replace('__FILES__', json.dumps(files))
 (OUT / 'sw.js').write_text(sw)
-emails = json.loads((PS / 'emails.json').read_text()) if (PS / 'emails.json').exists() else []  # 이메일 목록은 공개 저장소에 두지 않는다 (pwa_src/emails.json은 올리지 않음)
+emails = json.loads((PS / 'emails.json').read_text()) if (PS / 'emails.json').exists() else []  # 이메일 목록은 공개 저장소에 두지 않는다
 PRIV = ROOT / 'private'; PRIV.mkdir(exist_ok=True)
 (PRIV / 'firestore.rules').write_text((PS / 'firestore.rules.tmpl').read_text().replace('__EMAILS__', ',\n          '.join(json.dumps(e) for e in emails)))
 (OUT / 'README.md').write_text((PS / 'README.md').read_text().replace('__OWNER__', OWNER))

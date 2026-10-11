@@ -27,6 +27,7 @@ function refresh(opt) {
   CUR.robot = buildRobot(viewDesign(), S.drag);
   CUR.an = analyze(CUR.robot);
   validateSel();
+  if (typeof applyBuildFocus === 'function') applyBuildFocus();
   render2D(); update3D(); renderPick(); renderTabBadges(); renderChrome();
   if (opt.panel !== false) renderPanelSafe();
 }
@@ -149,11 +150,19 @@ function renderPanelSafe() {
 function renderPanel() {
   panelDirty = false;
   const t = S.tab;
-  els.pbody.innerHTML = t === 'combo' ? htmlCombo() : t === 'parts' ? htmlParts() : t === 'warn' ? htmlWarn() : t === 'designs' ? htmlDesigns() : htmlHist();
+  els.pbody.innerHTML = t === 'combo' ? htmlCombo() : t === 'build' ? htmlBuild() : t === 'parts' ? htmlParts() : t === 'warn' ? htmlWarn() : t === 'designs' ? htmlDesigns() : htmlHist();
   renderTabBadges();
 }
 function setTab(t, scroll) {
+  const was = S.tab;
   S.tab = t; renderPanel();
+  // 만드는 법 탭을 드나들 때 강조 표시를 켜고 끈다
+  if ((was === 'build') !== (t === 'build') && typeof applyBuildFocus === 'function') {
+    const had = !!S.buildFocus;
+    applyBuildFocus(); render2D(); update3D();
+    if (t === 'build' && S.buildFocus) focusCam(S.buildFocus);
+    else if (had) viewAll();
+  }
   if (scroll === false) return;
   if (isPhone()) {
     const top = els.panel.getBoundingClientRect().top + window.scrollY - els.views.getBoundingClientRect().height;
@@ -583,6 +592,10 @@ function onPanelClick(e) {
     case 'logout': if (BACKEND.logout) BACKEND.logout(); break;
     case 'login': if (BACKEND.login) BACKEND.login(); break;
     case 'reload': location.reload(); break;
+    case 'buildStep': openBuildStep(b.dataset.id, false); break;
+    case 'buildNext': stepBuild(1); break;
+    case 'buildPrev': stepBuild(-1); break;
+    case 'buildAll': S.ui.buildOpen = null; applyBuildFocus(); render2D(); update3D(); renderPanel(); viewAll(); break;
     case 'shareDesign': shareDesign(b.dataset.id); break;
     case 'pasteImport': pasteImport(); break;
     case 'acceptIncoming': acceptIncoming(); break;
@@ -625,6 +638,8 @@ function onPanelChange(e) {
     const L = d.opts.launch;
     const nm = k === 'bands' ? '고무줄' : L === 'catapult' ? '발사 각도' : '레일 각도', u = k === 'bands' ? '개' : '°';
     commit({ opts: { [k]: v } }, { ckey: 'opt:' + k, from: old, to: v, labelFn: (a, b) => `${nm} ${a}${u} → ${b}${u}` });
+  } else if (t.matches('input[type=checkbox][data-act="buildDone"]')) {
+    setBuildDone(t.dataset.id, t.checked);
   } else if (t.matches('input[type=checkbox][data-act="cmpPick"]')) {
     const id = t.dataset.id;
     S.ui.cmp = S.ui.cmp.filter(x => x !== id);

@@ -167,7 +167,7 @@ button:disabled{cursor:not-allowed}
 
 /* ---------- panel ---------- */
 .panel{background:var(--surface);min-width:0}
-.ptabs{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--vh-view));z-index:5;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--surface);border-bottom:1px solid var(--line)}
+.ptabs{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--vh-view));z-index:5;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));background:var(--surface);border-bottom:1px solid var(--line)}
 .app.big .ptabs{top:calc(env(safe-area-inset-top,0px) + 74vh)}
 .ptab{border:0;background:none;padding:11px 2px 9px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:4px}
 .ptab.on{color:var(--accent);border-bottom-color:var(--accent)}
@@ -382,6 +382,8 @@ button:disabled{cursor:not-allowed}
 .d2 .pt.sel{stroke:var(--accent);stroke-width:2.6;stroke-dasharray:none}
 .d2 .pt.bad{stroke:var(--danger);stroke-width:2.2;stroke-dasharray:none}
 .d2 .pt.peer{stroke-width:2.4;stroke-dasharray:3 2}
+.d2 .pt.focus{stroke:var(--ok);stroke-width:2.8;stroke-dasharray:none}
+.d2 .pt.dim{opacity:.3}
 .d2 .floor{stroke:var(--ink);stroke-width:1.4;vector-effect:non-scaling-stroke}
 .d2 .lim{stroke:var(--danger);stroke-width:1;stroke-dasharray:6 4;fill:none;vector-effect:non-scaling-stroke;opacity:.8}
 .d2 .sup{stroke:var(--ink);stroke-width:1;stroke-dasharray:3 3;fill:none;vector-effect:non-scaling-stroke;opacity:.5}
@@ -423,6 +425,45 @@ button:disabled{cursor:not-allowed}
   .cards{gap:6px}
   .card{padding:9px}
 }
+
+/* 만드는 법 */
+.prog{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:8px 0 6px}
+.prog i{display:block;height:100%;background:var(--ok);border-radius:inherit;transition:width .25s}
+.sec.hero{background:var(--ok-soft);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-top:12px}
+.sec.hero .sec-h{margin-bottom:6px}
+.sec.hero .btnrow{margin-top:8px}
+a.btn{text-decoration:none}
+.plist summary{cursor:pointer;font-size:13.5px;padding:2px 0}
+.plist ul{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:5px}
+.plist li{display:grid;grid-template-columns:3.4em minmax(0,1fr);gap:8px;font-size:13px;align-items:baseline}
+.plist .q{font-family:var(--f-mono);font-weight:600;text-align:right;font-size:12px}
+.plist small{color:var(--faint);font-size:11.5px}
+.blist{display:grid;gap:8px}
+.bstep{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);scroll-margin-top:calc(var(--vh-view) + 52px)}
+.bstep.open{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok)}
+.bstep.pick{border-style:dashed}
+.bs-h{width:100%;display:flex;align-items:center;gap:10px;background:none;border:0;padding:10px 12px;text-align:left;font:inherit;color:var(--ink);cursor:pointer;border-radius:var(--r)}
+.bs-h .no{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--surface-2);color:var(--muted);font-family:var(--f-mono)}
+.bstep.open .bs-h .no{box-shadow:0 0 0 2px var(--ok);color:var(--ink)}
+.bstep.done .bs-h .no{background:var(--ok);color:#fff;box-shadow:none}
+.bs-h .tt{flex:1;min-width:0;font-weight:600;font-size:14px}
+.bstep.done .bs-h .tt{color:var(--muted)}
+.bs-h .eye{flex:none;font-size:11.5px;font-weight:600;color:var(--ok)}
+.bs-b{padding:0 12px 12px 46px;display:grid;gap:9px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{font-size:12px;border:1px solid var(--line-strong);border-radius:99px;padding:2px 9px;background:var(--surface-2);white-space:nowrap}
+.pchip b{font-family:var(--f-mono);font-weight:600}
+.how{margin:0;padding-left:18px;display:grid;gap:6px;font-size:13.5px;line-height:1.55}
+.bnote{margin:0;font-size:12.5px;line-height:1.5;padding:7px 9px;border-radius:8px}
+.bnote b{margin-right:5px}
+.bnote.r{background:var(--info-soft)}
+.bnote.t{background:var(--surface-2)}
+.bnote.w{background:var(--warn-soft)}
+.bs-f{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bs-f .grow{flex:1}
+.donebox{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;cursor:pointer}
+.donebox input{width:18px;height:18px;accent-color:var(--ok)}
+@media (max-width:420px){.bs-b{padding-left:12px}.ptab{font-size:12.5px}}
 
 /* 설치형 앱: 로그인 화면 */
 .gate{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;padding:24px 16px;padding-top:calc(24px + env(safe-area-inset-top,0px))}
@@ -494,6 +535,7 @@ button:disabled{cursor:not-allowed}
     <aside class="panel" id="panel" aria-label="설계 패널">
       <div class="ptabs" role="tablist" id="ptabs">
         <button class="ptab on" role="tab" type="button" data-tab="combo">조합</button>
+        <button class="ptab" role="tab" type="button" data-tab="build">만들기</button>
         <button class="ptab" role="tab" type="button" data-tab="parts">부품</button>
         <button class="ptab" role="tab" type="button" data-tab="warn">경고</button>
         <button class="ptab" role="tab" type="button" data-tab="designs">구상안</button>
@@ -560,7 +602,7 @@ const OPTS = {
         cons: ['틀이 높아져서 시작 높이 15in를 넘지 않게 주의', '무게중심이 높아져요'] },
       { v: 'catapult', name: '투석기 팔', short: '투석기 팔',
         desc: '고무줄로 당긴 팔이 휘둘러 올라가다가 멈춤대에 부딪혀 멈추면 빈백이 날아가요.',
-        pros: ['구조가 단순하고 빨리 다시 쏠 수 있어요', '슬립기어로 당기면 걸쇠가 필요 없어요'],
+        pros: ['구조가 단순하고 빨리 다시 쏠 수 있어요', '캠(크랭크)으로 당기면 걸쇠가 필요 없어요'],
         cons: ['새총보다 거리·각도를 맞추기 어려워요', '멈출 때 충격이 커서 부품이 헐거워지기 쉬워요'] },
       { v: 'lift', name: '들어 올려 넣기', short: '들어 올려 넣기',
         desc: '쏘지 않고 빈백을 들어 올려서 골에 직접 내려놓아요.',
@@ -619,23 +661,23 @@ const OPTS = {
     title: '당기는 장치',
     choices: [
       { v: 'winch', name: '윈치', short: '윈치',
-        desc: '모터가 줄을 감아서 포켓을 당겨요.',
+        desc: '모터가 로프를 감아서 포켓을 당겨요. 로프는 VEX IQ 윈치·로프 팩에 든 것만 쓸 수 있어요.',
         pros: ['당기는 길이를 자유롭게 정해요', '부품이 적어요'],
-        cons: ['줄이 엉킬 수 있어요', '놓아 줄 걸쇠가 필요해요'] },
+        cons: ['로프가 엉킬 수 있어요', '걸쇠와, 그 걸쇠를 풀 방법이 따로 필요해요 (모터는 6개까지)'] },
       { v: 'rack', name: '랙기어', short: '랙기어',
-        desc: '톱니가 일자로 붙은 막대(랙)를 모터 기어가 밀고 당겨요.',
+        desc: '톱니가 일자로 붙은 막대(랙)를 모터 기어가 밀고 당겨요. 랙은 VEX IQ 리니어 모션 팩(따로 사는 부품)에 들어 있어요.',
         pros: ['튼튼하고 위치를 정확히 맞춰요'],
-        cons: ['랙 길이만큼 공간이 필요해요', '걸쇠가 필요해요'] },
-      { v: 'slip', name: '슬립기어', short: '슬립기어',
-        desc: '이빨 일부를 깎아 낸 기어예요. 돌다가 이빨 없는 곳에서 저절로 놓아줘요.',
-        pros: ['걸쇠가 필요 없어요', '계속 돌리기만 하면 연속 발사'],
-        cons: ['고무줄이 세면 이빨이 미끄러질 수 있어요', '당기는 거리가 기어 크기로 정해져요'] },
+        cons: ['랙 길이만큼 공간이 필요해요', '걸쇠와, 그 걸쇠를 풀 방법이 따로 필요해요 (모터는 6개까지)'] },
+      { v: 'slip', name: '캠 · 돌다가 놓기', short: '캠(크랭크)',
+        desc: '모터에 단 크랭크 팔이 돌면서 포켓을 끌고 가다가, 끝에서 빠져나가며 저절로 놓아줘요. 기어 이를 깎은 슬립기어는 부품 개조라 대회에서 안 돼서 이 방식을 써요.',
+        pros: ['걸쇠가 필요 없어요', '모터를 한 방향으로 돌리기만 하면 장전·발사가 반복돼요'],
+        cons: ['당기는 거리가 크랭크 팔 길이로 정해져요', '고무줄이 세면 기어로 힘을 키워야 해요 (12T → 36T)'] },
     ]
   },
 };
 const SLIDERS = {
   bands: { label: '고무줄 개수', min: 1, max: 8, step: 1, unit: '개',
-    desc: '많을수록 세게(멀리) 날아가요. 대신 당기는 장치와 틀이 더 큰 힘을 버텨야 해요. 실제 거리는 2차 시뮬레이션에서 확인해요.' },
+    desc: '많을수록 세게(멀리) 날아가요. 대신 당기는 장치와 틀이 더 큰 힘을 버텨야 해요. 고무줄은 VEX IQ 실리콘 고무줄이나 길이 7.5인치·폭 0.25인치 이하만 쓸 수 있어요(규칙 R14).' },
   rail: { label: '레일 각도', min: 15, max: 85, step: 1, unit: '°',
     desc: '레일이 바닥과 이루는 각도가 곧 발사 각도예요. 45° 근처가 가장 멀리 가고, 더 세우면 높이 올라가요.' },
   railCat: { label: '발사 각도(멈춤대)', desc: '멈춤대 위치가 발사 각도를 정해요. 팔이 멈추는 순간 빈백이 팔과 직각 방향으로 날아가요.' },
@@ -682,9 +724,9 @@ const KIND = {
   string:    { name: '줄', role: '윈치와 포켓 연결', vis: 'string', text: '윈치가 감는 줄이에요. 걸쇠가 놓아주면 포켓이 튀어 나가요.' },
   rack:      { name: '랙기어', role: '일자 톱니 막대', vis: 'beam', text: '톱니가 일자로 붙은 막대예요. 모터에 달린 작은 기어(피니언)가 돌면서 밀고 당겨요.' },
   pinion:    { name: '피니언 기어', role: '랙을 움직이는 작은 기어', vis: 'shaft', text: '모터 축에 달린 작은 기어예요. 랙의 톱니와 맞물려 돌아요.' },
-  slipGear:  { name: '슬립기어', role: '자동으로 놓아주는 기어', vis: 'shaft', text: '이빨 일부를 깎아 낸 기어예요. 이빨 있는 부분이 당기다가, 이빨 없는 부분에 오면 저절로 놓아줘서 걸쇠가 필요 없어요.' },
-  latch:     { name: '걸쇠', role: '당긴 포켓 붙잡기', vis: 'conn', text: '당긴 포켓을 붙잡아 두었다가 놓아주는 고리예요. 슬립기어를 쓰면 필요 없어요.' },
-  launchMotor:{ name: '발사부 모터', role: '당기는 장치를 돌림', vis: 'motor', text: '당기는 장치(윈치·랙기어·슬립기어)를 돌리는 모터예요.' },
+  slipGear:  { name: '크랭크(캠)', role: '당기다가 저절로 놓아주기', vis: 'shaft', text: '모터가 돌리는 크랭크 팔이에요. 돌면서 포켓(팔)을 끌고 가다가 끝에서 빠져나가며 저절로 놓아줘서 걸쇠가 필요 없어요. 기어 이를 깎은 슬립기어는 대회 규칙상 안 돼요(부품 개조 금지).' },
+  latch:     { name: '걸쇠', role: '당긴 포켓 붙잡기', vis: 'conn', text: '당긴 포켓을 붙잡아 두었다가 놓아주는 고리예요. 래칫과 폴(윈치·로프 팩)로 만들 수 있어요. 캠(크랭크) 방식이면 필요 없어요.' },
+  launchMotor:{ name: '발사부 모터', role: '당기는 장치를 돌림', vis: 'motor', text: '당기는 장치(윈치·랙기어·캠)를 돌리는 모터예요.' },
   arm:       { name: '투석기 팔', role: '휘둘러 던지는 팔', vis: 'beam', text: '한쪽 끝이 회전축에 고정된 팔이에요. 끝의 컵에 빈백을 담고 휘둘러 던져요.' },
   armStop:   { name: '팔이 멈춘 위치', role: '참고용 그림', vis: 'ghost', text: '팔이 멈춤대에 닿았을 때의 위치예요. 이때 빈백이 날아가요.' },
   cup:       { name: '컵', role: '빈백을 담는 곳', vis: 'plate', text: '팔 끝에서 빈백을 담는 받침이에요.' },
@@ -1222,8 +1264,8 @@ const COMBOS = [
     title: '투석기에 고무줄이 많아요',
     detail: '고무줄이 많으면 팔이 멈춤대에 세게 부딪혀 부품이 휘거나 빠질 수 있어요. 멈춤대에 고무 같은 완충재를 붙이거나 고무줄을 줄여요.' },
   { id: 'slipBand', level: 'warn', when: o => SLING(o.launch) && o.pull === 'slip' && o.bands >= 6,
-    title: '슬립기어 + 고무줄 많음',
-    detail: '고무줄 힘이 세면 슬립기어 이빨이 미끄러지거나 모터가 멈출 수 있어요. 고무줄을 줄이거나 다른 당기는 장치를 써요.' },
+    title: '캠(크랭크) + 고무줄 많음',
+    detail: '고무줄 힘이 세면 크랭크가 포켓을 끌다가 모터가 멈출 수 있어요. 기어로 힘을 키우거나(12T → 36T) 고무줄을 줄여요.' },
   { id: 'brainTop', level: 'warn', when: o => o.brain === 'top' && !!o.launch,
     title: '브레인을 위에 두면 발사부와 자리를 다퉈요',
     detail: '발사부가 쓰는 윗면을 브레인이 차지하고, 무게중심도 높아져요. 옆면이나 뒤쪽을 먼저 검토해 보세요.' },
@@ -1337,6 +1379,14 @@ function analyze(robot) {
   const air = wheels.filter((p, i) => bottoms[i] > lowB + 0.25);
   if (air.length) W.push({ id: 'air', level: 'warn', title: `바닥에 안 닿는 바퀴가 ${air.length}개 있어요`,
     detail: air.map(p => partName(p, T)).join(', ') + '. 바퀴 높이를 다른 바퀴와 맞춰 주세요.', keys: air.map(p => p.key) });
+
+  // 모터 개수: 대회 규칙 R9 (스마트 모터 6개까지)
+  const motors = solid.filter(p => ['motor', 'launchMotor', 'liftMotor', 'intakeMotor', 'cMotor'].includes(p.kind));
+  if (motors.length > 6) W.push({ id: 'motors', level: 'danger', title: `모터가 ${motors.length}개예요 (규칙상 6개까지)`,
+    detail: '대회 규칙(R9)상 스마트 모터는 6개까지 달 수 있어요. 연결하지 않은 모터도 세요. 바퀴 모터를 2개로 줄이거나(체인·기어로 앞뒤 바퀴 묶기) 장치를 합쳐 보세요.',
+    keys: motors.map(p => p.key) });
+  if (SLING(o.launch) && o.pull !== 'slip' && motors.length >= 6) W.push({ id: 'latchFree', level: 'warn', title: '걸쇠를 풀 모터가 없어요',
+    detail: `모터 ${motors.length}개를 다 써서 걸쇠를 따로 풀 모터가 없어요. 같은 발사부 모터로 풀리는 장치를 만들거나, 공압 피스톤(VEX IQ 공압 키트)을 쓰거나, 걸쇠가 필요 없는 캠(크랭크) 방식으로 바꿔 보세요.`, combo: true });
 
   // 옵션 조합
   for (const c of COMBOS) if (c.when(o)) W.push({ id: c.id, level: c.level, title: c.title, detail: c.detail, combo: true });
@@ -1542,9 +1592,25 @@ function disposeTree(g) {
   g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   while (g.children.length) g.remove(g.children[0]);
 }
-function fillRobotGroup(group, robot) {
+/* 만드는 법에서 지금 단계가 아닌 부품은 흐리게 그릴 재질 */
+function dimMaterials(M) {
+  const dim = m => { const c = m.clone(); c.transparent = true; c.opacity = (m.transparent ? m.opacity : 1) * 0.18; c.depthWrite = false; return c; };
+  const D = {};
+  for (const [k, v] of Object.entries(M)) {
+    if (v && v.isMaterial) D[k] = dim(v);
+    else if (v && typeof v === 'object') { D[k] = {}; for (const [k2, v2] of Object.entries(v)) D[k][k2] = v2 && v2.isMaterial ? dim(v2) : v2; }
+    else D[k] = v;
+  }
+  return D;
+}
+function fillRobotGroup(group, robot, focus) {
   disposeTree(group);
-  for (const p of robot.parts) group.add(meshFor(p, V3.mats));
+  const D = focus ? (V3.dimMats || (V3.dimMats = dimMaterials(V3.mats))) : null;
+  for (const p of robot.parts) {
+    const faded = D && !focus.has(p.key), obj = meshFor(p, faded ? D : V3.mats);
+    if (faded) obj.traverse(o => { o.castShadow = false; });
+    group.add(obj);
+  }
 }
 
 /* ---------- 겹쳐 그리기: 선택·겹침·무게중심·시작 상자·앞 화살표 ---------- */
@@ -1563,7 +1629,8 @@ function outlineFor(p, color, opacity) {
 function update3D() {
   if (!V3.ok) return;
   const R = CUR.robot, A = CUR.an;
-  if (V3.lastRobot !== R) { fillRobotGroup(V3.root, R); V3.lastRobot = R; }
+  const fsig = S.buildFocus ? S.buildFocus.join(',') : '';
+  if (V3.lastRobot !== R || V3.lastFocus !== fsig) { fillRobotGroup(V3.root, R, fsig ? new Set(S.buildFocus) : null); V3.lastRobot = R; V3.lastFocus = fsig; }
   const over = V3.over;
   over.children.forEach(o => { if (o.geometry) o.geometry.dispose(); if (o.material && !o.material.shared) o.material.dispose && o.material.dispose(); });
   disposeTree(over);
@@ -1573,8 +1640,17 @@ function update3D() {
   if (u) for (const p of R.parts) if (partInUnit(p, u)) over.add(outlineFor(p, 0x1b6dd0));
   // 다른 사람이 고른 부품
   for (const pr of peerSelections()) for (const p of R.parts) if (p.key === pr.key) over.add(outlineFor(p, new THREE.Color(pr.color || '#7a7a7a'), 0.9));
+  // 만드는 법: 지금 단계 부품 (초록 테두리 + 옅은 상자)
+  if (S.buildFocus) {
+    const fm = V3.focusMat || (V3.focusMat = Object.assign(new THREE.MeshBasicMaterial({ color: 0x1f9d55, transparent: true, opacity: 0.16, depthTest: false, depthWrite: false }), { shared: true }));
+    for (const k of S.buildFocus) {
+      const p = R.byKey.get(k); if (!p) continue;
+      over.add(outlineFor(p, 0x1f9d55));
+      if (p.shape !== 'line') { const g = new THREE.Mesh(boxGeo([p.s[0] + 0.3, p.s[1] + 0.3, p.s[2] + 0.3]), fm); g.renderOrder = 9; over.add(place(g, p)); }
+    }
+  }
   // 겹침
-  for (const k of A.bad) { const p = R.byKey.get(k); if (p) over.add(outlineFor(p, 0xd23b3b)); }
+  if (!S.buildFocus) for (const k of A.bad) { const p = R.byKey.get(k); if (p) over.add(outlineFor(p, 0xd23b3b)); }
   // 무게중심
   const com = t3(A.com);
   const ballMat = new THREE.MeshBasicMaterial({ color: ink, depthTest: false });
@@ -1630,6 +1706,23 @@ function fitCam(keepAngles, th, ph) {
   const f = fitR(bb, th == null ? V3.cam.th : th, ph == null ? V3.cam.ph : ph, V3.camera ? V3.camera.aspect : 1);
   if (keepAngles) { V3.cam.tgt = f.tgt; V3.cam.r = f.r; request3D(); }
   return f;
+}
+/* 만드는 법: 고른 부품들이 화면에 크게 보이게 (각도는 그대로) */
+function focusCam(keys) {
+  if (!V3.ok || !CUR.robot) return;
+  const bb = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
+  for (const k of keys) {
+    const p = CUR.robot.byKey.get(k); if (!p) continue;
+    for (let i = 0; i < 3; i++) { bb.min[i] = Math.min(bb.min[i], p.bb.min[i]); bb.max[i] = Math.max(bb.max[i], p.bb.max[i]); }
+  }
+  if (!isFinite(bb.min[0])) return;
+  for (let i = 0; i < 3; i++) {   // 너무 가까이 가지 않게 최소 8칸, 둘레 2칸 여유
+    const c = (bb.min[i] + bb.max[i]) / 2, h = Math.max(4, (bb.max[i] - bb.min[i]) / 2 + 2);
+    bb.min[i] = c - h; bb.max[i] = c + h;
+  }
+  V3.userMoved = true;
+  const f = fitR(bb, V3.cam.th, V3.cam.ph, V3.camera ? V3.camera.aspect : 1);
+  animCam({ th: V3.cam.th, ph: V3.cam.ph, r: f.r, tgt: f.tgt });
 }
 function presetCam(name) {
   V3.userMoved = true;
@@ -1832,8 +1925,10 @@ function visCls(p) {
 function partClass(p, ctx) {
   let c = 'pt ' + visCls(p);
   if (ctx.sel && partInUnit(p, ctx.sel)) c += ' sel';
-  else if (ctx.bad.has(p.key)) c += ' bad';
+  else if (ctx.focus && ctx.focus.has(p.key)) c += ' focus';
+  else if (!ctx.focus && ctx.bad.has(p.key)) c += ' bad';
   else if (ctx.peer.has(p.key)) c += ' peer';
+  if (ctx.focus && !ctx.focus.has(p.key)) c += ' dim';
   return c;
 }
 function allBB(R) {
@@ -1845,7 +1940,7 @@ function render2D() {
   if (!CUR.robot || els.pane2d.offsetParent === null) return;
   const R = CUR.robot, A = CUR.an, bb = allBB(R);
   const peerMap = new Map(peerSelections().map(x => [x.key, x.color]));
-  const ctx = { sel: selUnit(), bad: A.bad, peer: peerMap };
+  const ctx = { sel: selUnit(), bad: A.bad, peer: peerMap, focus: S.buildFocus ? new Set(S.buildFocus) : null };
   const fs = 1.15;
   drawTop(R, A, bb, ctx, fs);
   drawSide(R, A, bb, ctx, fs);
@@ -2000,7 +2095,7 @@ const CUR = { robot: null, an: null };
 const PREF_KEY = 'vexiq-design-prefs-v1', LOCAL_KEY = 'vexiq-design-local-v1';
 
 function loadPrefs() {
-  const def = { explain: true, view: null, sv: 'top', step: 1, startBox: false, big: false, lastDesign: null };
+  const def = { explain: true, view: null, sv: 'top', step: 1, startBox: false, big: false, lastDesign: null, buildDone: {} };
   try { const v = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); return Object.assign(def, v || {}); } catch (e) { return def; }
 }
 function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify(S.prefs)); } catch (e) {} }
@@ -2530,6 +2625,7 @@ function refresh(opt) {
   CUR.robot = buildRobot(viewDesign(), S.drag);
   CUR.an = analyze(CUR.robot);
   validateSel();
+  if (typeof applyBuildFocus === 'function') applyBuildFocus();
   render2D(); update3D(); renderPick(); renderTabBadges(); renderChrome();
   if (opt.panel !== false) renderPanelSafe();
 }
@@ -2652,11 +2748,19 @@ function renderPanelSafe() {
 function renderPanel() {
   panelDirty = false;
   const t = S.tab;
-  els.pbody.innerHTML = t === 'combo' ? htmlCombo() : t === 'parts' ? htmlParts() : t === 'warn' ? htmlWarn() : t === 'designs' ? htmlDesigns() : htmlHist();
+  els.pbody.innerHTML = t === 'combo' ? htmlCombo() : t === 'build' ? htmlBuild() : t === 'parts' ? htmlParts() : t === 'warn' ? htmlWarn() : t === 'designs' ? htmlDesigns() : htmlHist();
   renderTabBadges();
 }
 function setTab(t, scroll) {
+  const was = S.tab;
   S.tab = t; renderPanel();
+  // 만드는 법 탭을 드나들 때 강조 표시를 켜고 끈다
+  if ((was === 'build') !== (t === 'build') && typeof applyBuildFocus === 'function') {
+    const had = !!S.buildFocus;
+    applyBuildFocus(); render2D(); update3D();
+    if (t === 'build' && S.buildFocus) focusCam(S.buildFocus);
+    else if (had) viewAll();
+  }
   if (scroll === false) return;
   if (isPhone()) {
     const top = els.panel.getBoundingClientRect().top + window.scrollY - els.views.getBoundingClientRect().height;
@@ -3086,6 +3190,10 @@ function onPanelClick(e) {
     case 'logout': if (BACKEND.logout) BACKEND.logout(); break;
     case 'login': if (BACKEND.login) BACKEND.login(); break;
     case 'reload': location.reload(); break;
+    case 'buildStep': openBuildStep(b.dataset.id, false); break;
+    case 'buildNext': stepBuild(1); break;
+    case 'buildPrev': stepBuild(-1); break;
+    case 'buildAll': S.ui.buildOpen = null; applyBuildFocus(); render2D(); update3D(); renderPanel(); viewAll(); break;
     case 'shareDesign': shareDesign(b.dataset.id); break;
     case 'pasteImport': pasteImport(); break;
     case 'acceptIncoming': acceptIncoming(); break;
@@ -3128,6 +3236,8 @@ function onPanelChange(e) {
     const L = d.opts.launch;
     const nm = k === 'bands' ? '고무줄' : L === 'catapult' ? '발사 각도' : '레일 각도', u = k === 'bands' ? '개' : '°';
     commit({ opts: { [k]: v } }, { ckey: 'opt:' + k, from: old, to: v, labelFn: (a, b) => `${nm} ${a}${u} → ${b}${u}` });
+  } else if (t.matches('input[type=checkbox][data-act="buildDone"]')) {
+    setBuildDone(t.dataset.id, t.checked);
   } else if (t.matches('input[type=checkbox][data-act="cmpPick"]')) {
     const id = t.dataset.id;
     S.ui.cmp = S.ui.cmp.filter(x => x !== id);
@@ -3196,6 +3306,365 @@ function toast(msg, html) {
   els.toasts.appendChild(t);
   while (els.toasts.children.length > 3) els.toasts.firstChild.remove();
   setTimeout(() => t.remove(), 3400);
+}
+
+/* =========================================================
+   만드는 법: 고른 옵션대로 조립 순서 · 부품 · 요령 · 규칙
+   - 칸 수는 앱 모델 크기로 어림한 값 (1칸 = 구멍 간격 12.7mm)
+   - 부품 이름은 VEX IQ (2nd gen) 키트 이름 + 영어 이름(부품 포스터용)
+   - 규칙은 VIQRC 2026-27 Level Up 매뉴얼 R 규칙 기준
+   ========================================================= */
+const HERO = {
+  i3d: 'https://link.vex.com/docs/26-27/viqrc/hero-robot-instructions',
+  pdf: 'https://link.vex.com/docs/26-27/viqrc/hero-robot-instructions-pdf',
+  parts: 'https://docs.google.com/spreadsheets/d/134rXfE9KyW5ffhzk2MDPSEsMF4Amvvg5eddhcFC66zA/edit?usp=sharing',
+  lab: 'https://education.vex.com/stemlabs/iq/competition-101-vex-iq-level-up',
+};
+const BEAM1 = [2, 4, 5, 6, 8, 10, 12, 16];
+function beamName(n) {
+  const k = Math.max(2, Math.round(n));
+  const b = BEAM1.find(x => x >= k);
+  return b ? `1x${b} 빔` : `2x${k <= 18 ? 18 : 20} 빔`;
+}
+const beamEn = n => beamName(n).replace(' 빔', ' Beam');
+const pt = (n, q, en) => ({ n, q, en: en || '' });
+const MOTOR_KINDS = ['motor', 'launchMotor', 'liftMotor', 'intakeMotor', 'cMotor'];
+const RULE_BAND = '고무줄은 VEX IQ 실리콘 고무줄이나, 길이 7.5인치·폭 0.25인치 이하 고무줄만 쓸 수 있어요(R14).';
+const RULE_MOD = '부품을 자르거나 깎거나 붙이면 안 돼요. 금속 축 자르기, 고무줄·로프 매듭은 괜찮아요(R17).';
+
+function guideMotors(R) {
+  const m = R.parts.filter(p => MOTOR_KINDS.includes(p.kind));
+  return { all: m, drive: m.filter(p => p.kind === 'motor').length, intake: m.some(p => p.kind === 'intakeMotor'),
+    launch: m.some(p => p.kind === 'launchMotor' || p.kind === 'liftMotor'), custom: m.filter(p => p.kind === 'cMotor').length };
+}
+
+/* 단계 목록: [{ id, title, steps: [{ id, title, keys, parts, how, tip, rule, warn, pick }] }] */
+function buildGuide(design, R) {
+  const d = normDesign(design), o = d.opts, W = d.frame.w, L = d.frame.l;
+  const keys = (...ks) => ks.flat().filter(k => R.byKey.has(k));
+  const sz = (k, i) => { const p = R.byKey.get(k); return p ? p.s[i] : 0; };
+  const bands = R.parts.filter(p => p.kind === 'band').map(p => p.key);
+  const M = guideMotors(R), nM = M.all.length;
+  const G = [];
+  const pick = (what, k) => ({ id: 'pick-' + k, title: `${what} 고르기`, keys: keys(k === 'launch' ? 'L:ph' : k === 'intake' ? 'I:ph' : 'B:ph'),
+    parts: [], how: [`아직 ${what}를 안 골랐어요. 조합 탭에서 고르면 여기에 만드는 순서가 나와요.`], pick: true });
+
+  /* ---------- 준비 ---------- */
+  const mBits = [`바퀴 ${M.drive}개`];
+  if (M.intake) mBits.push('인테이커 1개');
+  if (M.launch) mBits.push(o.launch === 'lift' ? '들어 올리는 장치 1개' : '발사부 1개');
+  if (M.custom) mBits.push(`직접 추가 ${M.custom}개`);
+  G.push({ id: 'g-prep', title: '준비', steps: [
+    { id: 'prep', title: '시작 전에 준비하기', keys: [],
+      parts: [pt('핀 도구', 1, 'Pin Tool')],
+      how: [
+        '부품을 종류별로 나눠 두세요: 빔, 판, 핀, 축·칼라, 기어, 전기 부품. VEX IQ 부품 포스터(영어 이름)를 옆에 두면 찾기 쉬워요.',
+        '핀은 손으로 꾹 눌러 끼우고, 뺄 때는 **핀 도구**를 써요.',
+        `이 구상안은 스마트 모터를 **${nM}개** 써요: ${mBits.join(' + ')}. 대회 규칙상 모터는 6개까지예요(R9).`,
+      ],
+      warn: nM > 6 ? `모터가 ${nM}개라 규칙(6개까지)을 넘어요. 바퀴 모터를 2개로 줄이거나(체인·기어로 앞뒤 바퀴 묶기) 장치를 합쳐야 해요.` : '',
+      tip: '처음이라면 아래 공식 로봇 Flop 설명서를 한 번 따라 해 보세요. 부품이 어떻게 이어지는지 금방 익혀요.',
+      rule: '대회 로봇은 VEX IQ 부품으로만 만들어요(R12). ' + RULE_MOD },
+    { id: 'drive', title: '드라이빙보드 점검', keys: R.parts.filter(p => p.group === 'drive' && (p.kind === 'omni' || p.kind === 'motor')).map(p => p.key),
+      parts: [],
+      how: [
+        '바퀴 4개를 손으로 밀어 부드럽게 굴러가는지 봐요. 뻑뻑하면 칼라가 너무 꽉 조였거나 바퀴가 빔에 닿는 거예요.',
+        `모터 ${M.drive}개의 선(스마트 케이블)을 브레인 몇 번 포트에 꽂을지 정해서 종이에 적어 둬요. 코딩할 때 필요해요.`,
+        `프레임 위에서 발사부·브레인을 핀으로 고정할 빈 구멍 줄을 찾아 둬요. 이 구상안 프레임은 가로 ${W}칸 × 세로 ${L}칸이에요.`,
+      ],
+      tip: '실제 프레임 칸 수가 다르면 부품 탭의 "프레임 칸 수"부터 고쳐요. 그래야 아래 부품 길이가 맞게 나와요.' },
+  ] });
+
+  /* ---------- 브레인 ---------- */
+  if (!o.brain) G.push({ id: 'g-brain', title: '브레인', steps: [pick('브레인 위치', 'brain')] });
+  else {
+    const where = {
+      side: ['로봇 오른쪽 옆면에 2x 빔을 세로로 세워 받침을 만들고, 브레인 둘레의 핀 구멍과 핀으로 이어요.', '옆면'],
+      back: ['로봇 뒤쪽 끝에 세로 받침 빔 두 개를 세우고 브레인을 세워서 붙여요.', '뒤쪽'],
+      top: ['프레임 위에 2x 스탠드오프 4개를 세우고 그 위에 빔 두 줄을 깔아 브레인을 눕혀 붙여요. 아래로 선이 지나갈 틈이 생겨요.', '위쪽'],
+    }[o.brain];
+    G.push({ id: 'g-brain', title: '브레인', steps: [
+      { id: 'brain-' + o.brain, title: `브레인·배터리 달기 (${where[1]})`, keys: keys('B:brain', 'B:battery'),
+        parts: [pt('브레인 (2세대)', 1, 'Robot Brain'), pt('배터리 (2세대)', 1, 'Robot Battery'), pt('2x8 빔', 2, '2x8 Beam'),
+          pt('2x 스탠드오프', o.brain === 'top' ? 4 : 2, '2x Pitch Standoff'), pt('1x2 커넥터 핀', 6, '1x2 Connector Pin')],
+        how: ['배터리를 브레인 뒤쪽 배터리 칸에 끼워요.', where[0],
+          '화면과 전원 버튼이 보이고, 배터리를 분해하지 않고 뺄 수 있게 달아요(R7 권장).'],
+        tip: '브레인은 배터리까지 합치면 무거워서 무게중심을 많이 바꿔요. 다 달고 나면 경고 탭에서 무게중심을 확인하세요.',
+        rule: '브레인은 1개, 배터리는 VEX IQ 배터리 1개만 쓸 수 있어요(R6·R10).' },
+    ] });
+  }
+
+  /* ---------- 인테이커 ---------- */
+  const span = Math.max(4, Math.round(W - 7));
+  if (!o.intake) G.push({ id: 'g-intake', title: '인테이커', steps: [pick('인테이커', 'intake')] });
+  else if (o.intake === 'roller') G.push({ id: 'g-intake', title: '인테이커 (롤러)', steps: [
+    { id: 'roller-arm', title: '롤러를 걸 팔 두 개', keys: keys('I:armL', 'I:armR'),
+      parts: [pt(beamName(5), 2, beamEn(5)), pt('1x2 커넥터 핀', 4, '1x2 Connector Pin'), pt('3x5 직각 빔', 2, '3x5 Right Angle Beam')],
+      how: ['프레임 앞쪽 양 모서리에 빔을 붙여 앞으로 약 4칸 튀어나온 팔 두 개를 만들어요.',
+        '두 팔의 축 구멍이 정확히 마주 봐야 롤러 축이 꼬이지 않아요. 축을 끼워 보고 손으로 돌려 확인해요.'] },
+    { id: 'roller-bar', title: '롤러 만들기', keys: keys('I:roller'),
+      parts: [pt(`금속 축 (약 ${span + 2}칸)`, 1, 'Pitch Shaft'), pt('인테이크 플랩', 6, 'Intake Flap'), pt('고무 축 칼라', 2, 'Rubber Shaft Collar'), pt('0.25x 축 스페이서', 4, 'Shaft Spacer')],
+      how: [`두 팔 사이(약 ${span}칸)를 가로지르는 금속 축에 **인테이크 플랩**이나 트랙션 링크를 끼워 롤러를 만들어요. 날개가 빈백을 긁어서 안으로 밀어 넣어요.`,
+        '롤러 높이는 바닥에서 빈백 높이의 절반쯤이 잘 빨려 들어와요.',
+        '축 양끝은 고무 축 칼라로 막아 빠지지 않게 해요.'],
+      tip: '맞는 길이의 축이 없으면 긴 금속 축을 잘라 써도 돼요(R17 허용). V5용 ⅛인치 금속 축도 쓸 수 있어요(R14).' },
+    { id: 'roller-motor', title: '롤러 모터 달기', keys: keys('I:motor'),
+      parts: [pt('스마트 모터', 1, 'Smart Motor'), pt('36T 기어', 1, '36 Tooth Gear'), pt('12T 기어', 1, '12 Tooth Gear'), pt('모터 축', 1, 'Motor Shaft'), pt('스마트 케이블', 1, 'Smart Cable')],
+      how: ['모터를 한쪽 팔 바깥에 붙이고, 모터 축에 36T 기어, 롤러 축에 12T 기어를 끼워 맞물려요. 롤러가 모터보다 3배 빨리 돌아요.',
+        '두 기어가 딱 맞물리는 구멍 간격을 찾아 끼워요. 너무 붙거나 떨어지면 이가 튀어요.'] },
+    { id: 'roller-test', title: '빨아들이기 시험', keys: keys('I:roller', 'I:armL', 'I:armR'),
+      parts: [],
+      how: ['빈백을 앞에 두고 모터를 돌려 보세요. 잘 안 들어오면 롤러를 1칸 낮추거나 날개를 더 달아요.',
+        '빈백 두 개가 한꺼번에 들어오면 규칙 위반이에요(한 번에 1개). 입구 폭을 빈백 1개만큼으로 좁혀요.'] },
+  ] });
+  else if (o.intake === 'claw') G.push({ id: 'g-intake', title: '인테이커 (집게)', steps: [
+    { id: 'claw-base', title: '집게 받침 만들기', keys: keys('I:mount', 'I:arm', 'I:wrist'),
+      parts: [pt('2x6 빔', 2, '2x6 Beam'), pt(beamName(4), 2, beamEn(4)), pt('1x2 커넥터 핀', 6, '1x2 Connector Pin')],
+      how: ['프레임 앞에 가로 빔을 대고, 그 위에 앞으로 약 3칸 뻗는 팔을 달아 집게를 받칠 손목을 만들어요.'] },
+    { id: 'claw-finger', title: '손가락 두 개', keys: keys('I:fingerL', 'I:fingerR'),
+      parts: [pt('36T 기어', 2, '36 Tooth Gear'), pt(beamName(6), 2, beamEn(6)), pt('트랙션 링크', 4, 'Traction Link'), pt('고무 축 칼라', 4, 'Rubber Shaft Collar')],
+      how: ['같은 크기 기어 두 개를 맞물리고 각 기어에 손가락 빔을 붙여요. 한쪽이 돌면 다른 쪽이 반대로 돌아서 같이 오므려요.',
+        '손가락 안쪽에 트랙션 링크를 붙이면 빈백이 덜 미끄러져요.'] },
+    { id: 'claw-motor', title: '집게 모터 달기', keys: keys('I:motor'),
+      parts: [pt('스마트 모터', 1, 'Smart Motor'), pt('모터 축', 1, 'Motor Shaft'), pt('스마트 케이블', 1, 'Smart Cable')],
+      how: ['모터 축을 한쪽 손가락 기어에 바로 끼워요.'],
+      tip: '빈백을 꽉 쥔 채 오래 있으면 모터가 뜨거워져요. 코드에서 잡는 힘(토크)을 줄여요.' },
+    { id: 'claw-test', title: '집기 시험', keys: keys('I:fingerL', 'I:fingerR'),
+      parts: [],
+      how: ['빈백을 집어 들고 로봇을 흔들어도 안 떨어지는지 봐요. 빈백이 말랑해서 손가락을 너무 벌리면 놓쳐요.'] },
+  ] });
+  else G.push({ id: 'g-intake', title: '인테이커 (컨베이어)', steps: [
+    { id: 'conv-guide', title: '비스듬한 가이드', keys: keys('I:guideL', 'I:guideR', 'I:legL', 'I:legR'),
+      parts: [pt('2x12 빔', 2, '2x12 Beam'), pt('45° 각도 빔', 2, '45° Angle Beam'), pt(beamName(5), 2, beamEn(5)), pt('1x2 커넥터 핀', 8, '1x2 Connector Pin')],
+      how: ['앞 바닥에서 뒤쪽 위로 올라가는 비스듬한 가이드 두 개를 세우고, 다리 빔으로 받쳐 각도를 고정해요.'] },
+    { id: 'conv-belt', title: '벨트 걸기', keys: keys('I:belt'),
+      parts: [pt('16T 스프로킷', 4, '16 Tooth Sprocket'), pt('금속 축', 2, 'Pitch Shaft'), pt('체인 링크', '약 60', 'Chain Link'), pt('트랙션 링크·인테이크 플랩', 6, 'Traction Link / Intake Flap')],
+      how: ['위·아래 축에 스프로킷을 두 개씩 끼우고, 체인 링크를 이어 벨트 두 줄을 걸어요. 체인 한 줄 길이는 위아래 축 거리의 두 배보다 조금 길게요.',
+        '체인 사이사이에 트랙션 링크나 플랩을 끼우면 빈백을 실어 올려요.'] },
+    { id: 'conv-motor', title: '컨베이어 모터 달기', keys: keys('I:motor'),
+      parts: [pt('스마트 모터', 1, 'Smart Motor'), pt('모터 축', 1, 'Motor Shaft'), pt('스마트 케이블', 1, 'Smart Cable')],
+      how: ['위쪽 축에 모터를 연결해요. 벨트가 너무 느리면 기어로 속도를 올려요.'] },
+    { id: 'conv-test', title: '실어 올리기 시험', keys: keys('I:belt'),
+      parts: [],
+      how: ['빈백을 앞에 두고 돌려서 위까지 올라가는지 봐요.',
+        '벨트 위에 빈백이 2개 이상 올라가면 규칙 위반이에요(한 번에 1개). 입구에서 하나씩만 들어오게 막는 문을 달아요.'] },
+  ] });
+
+  /* ---------- 발사부 · 들어 올리는 장치 ---------- */
+  if (!o.launch) G.push({ id: 'g-launch', title: '발사부', steps: [pick('발사 방식', 'launch')] });
+  else if (SLING(o.launch)) {
+    const down = o.launch === 'sling_down';
+    const railLen = sz('L:rail', 1) || (down ? 9.5 : 11), postH = sz('L:postL', 2) || 9;
+    const ang = [30, 45, 60].reduce((a, b) => (Math.abs(b - o.rail) < Math.abs(a - o.rail) ? b : a));
+    const steps = [
+      { id: 'sl-base', title: '발사부 받침판', keys: keys('L:base'),
+        parts: [pt('4x8 판', 2, '4x8 Plate'), pt('2x 스탠드오프', 4, '2x Pitch Standoff'), pt('1x1 커넥터 핀', 8, '1x1 Connector Pin')],
+        how: ['프레임 가운데 위에 판을 깔아 발사부 바닥을 만들어요. 바퀴 모터와 닿지 않게 스탠드오프로 살짝 띄워요.'] },
+      { id: 'sl-rail', title: `레일 (${o.rail}°)`, keys: keys('L:rail', 'L:railsup'),
+        parts: [pt(beamName(railLen), 2, beamEn(railLen)), pt(`${ang}° 각도 빔`, 2, `${ang}° Angle Beam`), pt('2x 스탠드오프', 2, '2x Pitch Standoff')],
+        how: [`빔 두 개를 나란히 놓아 포켓이 미끄러질 레일을 만들어요(길이 약 ${Math.round(railLen)}칸).`,
+          `레일을 바닥에서 **${o.rail}°** 세워요. 30°·45°·60° 각도 빔을 쓰면 각도 맞추기가 쉬워요.`,
+          '레일 아래쪽 끝은 스탠드오프로 받쳐 흔들리지 않게 해요.'] },
+      { id: 'sl-post', title: '새총 틀 (기둥 두 개)', keys: keys('L:postL', 'L:postR'),
+        parts: [pt(beamName(postH), 2, beamEn(postH)), pt(beamName(6), 1, beamEn(6)), pt('1x2 커넥터 핀', 6, '1x2 Connector Pin')],
+        how: ['레일 앞쪽 양옆에 기둥 두 개를 세워요.', '고무줄이 세게 당기니 기둥 꼭대기를 가로 빔으로 서로 묶어야 안 휘어요.'] },
+      { id: 'sl-pocket', title: '포켓 (빈백 1개 자리)', keys: keys('L:pocket', 'L:bag'),
+        parts: [pt('4x4 판', 1, '4x4 Plate'), pt(beamName(4), 2, beamEn(4)), pt('1x1 커넥터 핀', 6, '1x1 Connector Pin')],
+        how: ['빈백 1개가 딱 들어가는 판에 낮은 벽을 둘러 포켓을 만들어요. 규칙상 빈백은 한 번에 1개만 가질 수 있어요.',
+          '포켓이 레일 위를 걸림 없이 미끄러지는지 손으로 밀어 봐요. 꽉 끼면 안 날아가요.'] },
+      { id: 'sl-band', title: `고무줄 ${o.bands}개 걸기`, keys: keys(bands, 'L:postL', 'L:postR'),
+        parts: [pt('고무줄', o.bands, 'Silicone Rubber Band'), pt('고무줄 앵커', 2, 'Rubber Band Anchor')],
+        how: [`틀 꼭대기 양쪽과 포켓 뒤쪽 사이에 고무줄 ${o.bands}개를 걸어요.`, '고무줄 앵커나 스탠드오프 끝에 걸면 잘 안 빠져요.'],
+        rule: RULE_BAND },
+    ];
+    const free = '걸쇠를 풀 방법도 정해야 해요. 모터가 6개로 꽉 차면(바퀴 4 + 인테이커 1 + 발사부 1) 따로 풀 모터가 없어요. ① 같은 발사부 모터로 풀리게 하는 장치를 만들거나, ② VEX IQ 공압 키트의 피스톤으로 풀거나(공압 펌프는 모터 6개 제한에 안 들어가요. 공압 규칙은 R16), ③ 걸쇠가 필요 없는 캠(크랭크) 방식으로 바꿔요. 처음이라면 ③이 가장 쉬워요.';
+    if (o.pull === 'rack') steps.push({ id: 'sl-rack', title: '랙기어로 당기기', keys: keys('L:rack', 'L:pinion', 'L:motor', 'L:latch'),
+      parts: [pt('랙기어 1x20', 1, 'Linear Motion Rack Gear'), pt('리니어 모션 브래킷', 4, 'Linear Motion Bracket'), pt('12T 기어', 1, '12 Tooth Gear'), pt('스마트 모터', 1, 'Smart Motor'), pt('스마트 케이블', 1, 'Smart Cable')],
+      how: ['랙기어는 VEX IQ **리니어 모션 팩**(따로 사는 부품)에 들어 있어요.',
+        '레일 옆에 랙을 달고, 모터 축의 12T 기어가 랙 톱니에 맞물려 포켓을 밀고 당기게 해요.', free] });
+    else if (o.pull === 'slip') steps.push({ id: 'sl-cam', title: '캠(크랭크)으로 당겼다 놓기', keys: keys('L:slip', 'L:motor'),
+      parts: [pt('스마트 모터', 1, 'Smart Motor'), pt('12T 기어', 1, '12 Tooth Gear'), pt('36T 기어', 1, '36 Tooth Gear'), pt('크랭크 팔', 1, 'Crank Arm with 23 Tooth Gear'), pt('1x 스탠드오프', 1, '1x Pitch Standoff'), pt('스마트 케이블', 1, 'Smart Cable')],
+      how: ['모터 축에 12T, 크랭크 축에 36T 기어를 맞물려 힘을 3배로 키워요.',
+        '크랭크 축에 크랭크 팔(또는 짧은 빔)을 달고, 끝에 스탠드오프를 세워 걸이를 만들어요.',
+        '크랭크가 돌면 걸이가 포켓 뒤 고리를 끌고 가다가, 맨 끝을 지나면 고리에서 빠져 포켓이 튀어 나가요. 모터를 한 방향으로 계속 돌리면 다시 걸어서 당겨요.'],
+      tip: '크랭크 팔 길이가 당기는 거리를 정해요. 길수록 멀리 당기지만 힘이 더 들어요.',
+      rule: '기어 이를 깎아 만드는 슬립기어는 부품 개조라 대회에서 안 돼요(R17). 크랭크 방식은 개조 없이 같은 일을 해요.' });
+    else steps.push({ id: 'sl-winch', title: '윈치로 당기기', keys: keys('L:motor', 'L:winch', 'L:string', 'L:latch'),
+      parts: [pt('스마트 모터', 1, 'Smart Motor'), pt('스풀', 1, '1x Wide Spool'), pt('로프', 1, 'Pitch Rope'), pt('래칫 + 폴', 1, 'Ratchet + Pawl'), pt('스마트 케이블', 1, 'Smart Cable')],
+      how: ['모터 축에 **스풀**을 끼우고 VEX IQ 로프를 감아 포켓 뒤에 묶어요. 매듭은 규칙상 괜찮아요.',
+        '포켓을 끝까지 당겼을 때 붙잡아 둘 걸쇠가 필요해요. 래칫과 폴을 쓰면 감긴 로프가 풀리지 않게 잡아 줘요.', free],
+      rule: '로프는 VEX IQ 윈치·로프 팩에 든 것만 쓸 수 있어요. 일반 실이나 끈은 안 돼요(R12).' });
+    steps.push({ id: 'sl-test', title: '발사 시험', keys: keys('L:pocket', 'L:bag'),
+      parts: [],
+      how: ['처음엔 고무줄 1~2개로 시작해서 하나씩 늘려요.', '쏘기 전에는 포켓 앞에 손이 없게 하고, 시험할 땐 보안경을 쓰면 더 안전해요.',
+        '고무줄 개수마다 얼마나 날아갔는지 적어 두세요. 2차 시뮬레이션에서 실측 보정에 써요.'] });
+    G.push({ id: 'g-launch', title: down ? '발사부 (새총 · 아래로 당김)' : '발사부 (새총 · 뒤로 당김)', steps });
+  } else if (o.launch === 'catapult') {
+    const towerH = sz('L:towerL', 2) || 4;
+    G.push({ id: 'g-launch', title: '발사부 (투석기)', steps: [
+      { id: 'ca-base', title: '발사부 받침판', keys: keys('L:base'),
+        parts: [pt('4x8 판', 2, '4x8 Plate'), pt('2x 스탠드오프', 4, '2x Pitch Standoff'), pt('1x1 커넥터 핀', 8, '1x1 Connector Pin')],
+        how: ['프레임 가운데 위에 판을 깔아 발사부 바닥을 만들어요. 바퀴 모터와 닿지 않게 스탠드오프로 살짝 띄워요.'] },
+      { id: 'ca-pivot', title: '팔이 도는 축 (기둥 두 개)', keys: keys('L:towerL', 'L:towerR', 'L:pivot'),
+        parts: [pt(beamName(towerH), 2, beamEn(towerH)), pt('금속 축 (약 8칸)', 1, 'Pitch Shaft'), pt('고무 축 칼라', 2, 'Rubber Shaft Collar')],
+        how: ['받침판 위 양옆에 짧은 기둥 두 개를 세우고, 꼭대기 구멍에 축을 가로질러 끼워요.', '축이 양쪽 기둥에 모두 걸려야 안 휘어요.'] },
+      { id: 'ca-arm', title: '팔과 컵', keys: keys('L:arm', 'L:cup', 'L:bag'),
+        parts: [pt(beamName(10), 2, beamEn(10)), pt('4x4 판', 1, '4x4 Plate'), pt(beamName(4), 2, beamEn(4)), pt('1x1 커넥터 핀', 8, '1x1 Connector Pin')],
+        how: ['빔 두 개(약 10칸)를 나란히 놓고 구멍에 축을 끼우면, 팔이 축을 중심으로 자유롭게 돌아요.',
+          '팔 끝에 빈백 1개용 컵(판 + 낮은 벽)을 달아요.'] },
+      { id: 'ca-stop', title: `멈춤대 (발사 각도 ${o.rail}°)`, keys: keys('L:stop', 'L:stopL', 'L:stopR', 'L:armStop'),
+        parts: [pt(beamName(6), 1, beamEn(6)), pt(beamName(5), 2, beamEn(5)), pt('트랙션 링크', 2, 'Traction Link')],
+        how: ['팔이 멈출 가로 막대를 세워요. 멈춤대 위치가 발사 각도를 정해요.', '팔이 부딪히는 자리에 트랙션 링크를 대면 충격이 줄어요.'] },
+      { id: 'ca-band', title: `고무줄 ${o.bands}개 걸기`, keys: keys(bands, 'L:anchor'),
+        parts: [pt('고무줄', o.bands, 'Silicone Rubber Band'), pt('고무줄 앵커', 2, 'Rubber Band Anchor')],
+        how: ['팔 아래쪽과 앞쪽 앵커 사이에 고무줄을 걸어 팔이 위로 튕기게 해요.'],
+        rule: RULE_BAND },
+      { id: 'ca-cam', title: '캠(크랭크)으로 팔 당겼다 놓기', keys: keys('L:motor', 'L:slip'),
+        parts: [pt('스마트 모터', 1, 'Smart Motor'), pt('12T 기어', 1, '12 Tooth Gear'), pt('36T 기어', 1, '36 Tooth Gear'), pt('크랭크 팔', 1, 'Crank Arm with 23 Tooth Gear'), pt('스마트 케이블', 1, 'Smart Cable')],
+        how: ['모터 축에 12T, 크랭크 축에 36T 기어를 맞물려 힘을 3배로 키워요.',
+          '크랭크가 돌면서 팔을 끌어내리다가, 맨 끝을 지나면 놓아줘서 팔이 튀어 올라요. 모터를 한 방향으로 계속 돌리면 다시 끌어내려요.'],
+        rule: '기어 이를 깎아 만드는 슬립기어는 부품 개조라 대회에서 안 돼요(R17).' },
+      { id: 'ca-test', title: '발사 시험', keys: keys('L:arm', 'L:cup'),
+        parts: [],
+        how: ['처음엔 고무줄 1~2개로 시작해서 하나씩 늘려요. 팔이 도는 길에 손이 없게 해요.',
+          '고무줄 개수마다 얼마나 날아갔는지 적어 두세요. 2차 시뮬레이션에서 실측 보정에 써요.'] },
+    ] });
+  } else {
+    const towerH = sz('L:towerL', 2) || 13;
+    G.push({ id: 'g-launch', title: '들어 올려 넣는 장치', steps: [
+      { id: 'li-tower', title: '세로 기둥 두 개', keys: keys('L:towerL', 'L:towerR'),
+        parts: [pt(beamName(Math.min(towerH, 16)), 4, beamEn(Math.min(towerH, 16))), pt('리니어 모션 빔·브래킷', '여러 개', 'Linear Motion Beam / Bracket'), pt('1x2 커넥터 핀', 8, '1x2 Connector Pin')],
+        how: [`앞쪽 양옆에 높이 약 ${Math.round(towerH)}칸 기둥을 세워요. 빔을 두 겹으로 붙이면 덜 흔들려요.`,
+          'VEX IQ 리니어 모션 팩(따로 사는 부품)의 빔과 브래킷을 쓰면 위아래로 부드럽게 미끄러져요.'] },
+      { id: 'li-carriage', title: '캐리지와 받침', keys: keys('L:carriage', 'L:tray', 'L:bag'),
+        parts: [pt('4x8 판', 1, '4x8 Plate'), pt('4x4 판', 1, '4x4 Plate'), pt(beamName(4), 2, beamEn(4))],
+        how: ['기둥을 타고 오르내릴 판(캐리지)을 만들고, 앞에 빈백 받침을 달아요.', '받침을 살짝 뒤로 기울이면 빈백이 덜 미끄러져요.'] },
+      { id: 'li-motor', title: '올리는 모터', keys: keys('L:motor'),
+        parts: [pt('스마트 모터', 1, 'Smart Motor'), pt('16T 스프로킷', 2, '16 Tooth Sprocket'), pt('체인 링크', '약 40', 'Chain Link'), pt('12T 기어', 1, '12 Tooth Gear'), pt('36T 기어', 1, '36 Tooth Gear'), pt('스마트 케이블', 1, 'Smart Cable')],
+        how: ['모터로 체인(스프로킷 + 체인 링크)이나 로프(스풀)를 감아 캐리지를 끌어올려요.', '무게가 꽤 나가니 모터 쪽 12T → 36T 기어로 힘을 3배로 키워요.'],
+        tip: '공식 로봇 Flop도 인테이커 + 팔로 들어 올리는 방식이에요. Flop 설명서의 팔 부분이 그대로 참고가 돼요.' },
+      { id: 'li-test', title: '올리기 시험', keys: keys('L:carriage', 'L:tray'),
+        parts: [],
+        how: ['L4 골(약 24인치)까지 올라가는지 봐요.', '끝까지 올렸을 때 로봇이 앞으로 넘어지지 않는지 확인해요. 넘어지면 무거운 부품을 뒤로 옮겨요.'] },
+    ] });
+  }
+
+  /* ---------- 마무리 ---------- */
+  const fin = [];
+  const custom = R.parts.filter(p => p.group === 'custom');
+  if (custom.length) fin.push({ id: 'custom', title: '직접 추가한 부품', keys: custom.map(p => p.key),
+    parts: custom.map(p => pt(p.name, 1)),
+    how: [`부품 탭에서 직접 추가한 ${custom.length}개예요: ${custom.map(p => p.name).join(', ')}. 3D에서 자리를 확인하고 달아요.`] });
+  fin.push({ id: 'wire', title: '선 연결과 마지막 점검', keys: keys('B:brain', M.all.map(p => p.key)),
+    parts: [pt('스마트 케이블', '모터 수만큼', 'Smart Cable')],
+    how: ['모터마다 스마트 케이블로 브레인 포트에 연결하고, 포트 번호를 적어 둬요.',
+      '선이 바퀴·기어·고무줄에 끼지 않게 정리해요. 묶을 땐 고무줄을 써요.',
+      '위 "시작 크기" 버튼으로 11 × 20 × 15인치 상자 안에 들어가는지 보고, 줄자로도 재 봐요.',
+      '경기가 끝나면 전원 없이 빈백을 꺼낼 수 있어야 해요(R5).'],
+    rule: '케이블 타이는 쓸 수 없고, 테이프는 모터·브레인 이름표로만 돼요(R12·R14).',
+    tip: '다 만들면 사진을 찍어 두세요. 나중에 진단 탭에서 쓸 수 있어요.' });
+  G.push({ id: 'g-fin', title: '마무리', steps: fin });
+  return G;
+}
+
+/* ---------- 상태 ---------- */
+function guideState() {
+  const d = curDesign();
+  if (!d || !CUR.robot) return null;
+  const G = buildGuide(d, CUR.robot), flat = G.flatMap(g => g.steps);
+  const done = ((S.prefs.buildDone || {})[S.curId]) || {};
+  return { G, flat, done, open: flat.find(s => s.id === S.ui.buildOpen) || null };
+}
+/* refresh 때 불러서, 펼친 단계의 부품을 2D·3D에서 강조한다 */
+function applyBuildFocus() {
+  if (S.tab !== 'build' || !S.ui.buildOpen || !CUR.robot) { S.buildFocus = null; return; }
+  const st = guideState();
+  S.buildFocus = st && st.open && st.open.keys.length ? st.open.keys : null;
+}
+function openBuildStep(id, scroll) {
+  S.ui.buildOpen = S.ui.buildOpen === id ? null : id;
+  applyBuildFocus();
+  render2D(); update3D(); renderPanel();
+  if (S.buildFocus) focusCam(S.buildFocus); else viewAll();
+  if (scroll && S.ui.buildOpen) {
+    const el = document.querySelector(`.bstep[data-id="${CSS.escape(S.ui.buildOpen)}"]`);
+    if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+}
+function stepBuild(dir) {
+  const st = guideState(); if (!st) return;
+  const i = st.flat.findIndex(s => s.id === S.ui.buildOpen);
+  const n = st.flat[Math.max(0, Math.min(st.flat.length - 1, i + dir))];
+  if (n && n.id !== S.ui.buildOpen) { S.ui.buildOpen = null; openBuildStep(n.id, true); }
+}
+function setBuildDone(id, v) {
+  const all = S.prefs.buildDone || (S.prefs.buildDone = {});
+  const m = all[S.curId] || (all[S.curId] = {});
+  if (v) m[id] = Date.now(); else delete m[id];
+  savePrefs(); renderPanel();
+}
+function viewAll() {
+  if (typeof fitCam !== 'function' || !V3.ok) return;
+  const f = fitCam(false);
+  if (f) animCam({ th: V3.cam.th, ph: V3.cam.ph, r: f.r, tgt: f.tgt });
+}
+
+/* ---------- 화면 ---------- */
+const mdLite = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+function partsSummary(flat) {
+  const m = new Map();
+  for (const s of flat) for (const p of s.parts || []) {
+    const k = p.n, cur = m.get(k);
+    if (!cur) m.set(k, Object.assign({}, p));
+    else cur.q = typeof cur.q === 'number' && typeof p.q === 'number' ? cur.q + p.q : '여러 개';
+  }
+  return [...m.values()];
+}
+function htmlBuild() {
+  const st = guideState();
+  if (!st) return '<div class="empty">구상안을 먼저 만들어 주세요.</div>';
+  const { G, flat, done, open } = st;
+  const real = flat.filter(s => !s.pick), nDone = real.filter(s => done[s.id]).length;
+  const pct = real.length ? Math.round(nDone / real.length * 100) : 0;
+  const d = curDesign();
+  let h = `<section class="sec"><div class="sec-h"><h3>만드는 법</h3><span class="aside">${nDone}/${real.length} 단계</span></div>
+    <p class="hint">${esc(designSummary(d))}</p>
+    <div class="prog" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+    <p class="hint ex-only">고른 옵션대로 만드는 순서예요. 단계를 누르면 3D와 도면에서 그 부분이 초록색으로 보여요. 칸 수와 개수는 이 구상안 크기로 어림한 값이라, 실제 부품을 대 보며 맞춰요.</p></section>`;
+  h += `<section class="sec hero"><div class="sec-h"><h3>처음이라면: 공식 로봇 Flop</h3></div>
+    <p class="hint">VEX가 이번 시즌(Level Up)용으로 낸 로봇이에요. 인테이커로 빈백을 잡고 팔로 들어 올려요. 3D 설명서를 따라 한 번 만들어 보면 부품이 어떻게 이어지는지 익힐 수 있어요.</p>
+    <div class="btnrow"><a class="btn sm" href="${HERO.i3d}" target="_blank" rel="noopener">3D 설명서</a><a class="btn sm" href="${HERO.pdf}" target="_blank" rel="noopener">PDF 설명서</a><a class="btn sm" href="${HERO.parts}" target="_blank" rel="noopener">부품 목록</a><a class="btn sm" href="${HERO.lab}" target="_blank" rel="noopener">첫 로봇 수업</a></div></section>`;
+  const sum = partsSummary(real);
+  if (sum.length) h += `<section class="sec"><details class="plist"><summary><b>준비물</b> · 부품 ${sum.length}가지 (어림)</summary><ul>${sum.map(p =>
+    `<li><span class="q">${esc(p.q)}</span><span>${esc(p.n)}${p.en ? ` <small>${esc(p.en)}</small>` : ''}</span></li>`).join('')}</ul></details></section>`;
+  let no = 0;
+  for (const g of G) {
+    h += `<section class="sec"><div class="sec-h"><h3>${esc(g.title)}</h3></div><div class="blist">`;
+    for (const s of g.steps) {
+      const isOpen = open && open.id === s.id, isDone = !!done[s.id];
+      if (!s.pick) no++;
+      h += `<div class="bstep${isOpen ? ' open' : ''}${isDone ? ' done' : ''}${s.pick ? ' pick' : ''}" data-id="${esc(s.id)}">
+        <button class="bs-h" type="button" data-act="buildStep" data-id="${esc(s.id)}" aria-expanded="${!!isOpen}">
+          <span class="no">${s.pick ? '?' : isDone ? '✓' : no}</span><span class="tt">${esc(s.title)}</span>${s.keys.length ? '<span class="eye" aria-hidden="true">보기</span>' : ''}</button>`;
+      if (isOpen) {
+        h += '<div class="bs-b">';
+        if (s.parts.length) h += `<div class="chips">${s.parts.map(p => `<span class="pchip" title="${esc(p.en)}"><b>${esc(p.q)}</b> ${esc(p.n)}</span>`).join('')}</div>`;
+        h += `<ol class="how">${s.how.map(x => `<li>${mdLite(x)}</li>`).join('')}</ol>`;
+        if (s.warn) h += `<p class="bnote w"><b>주의</b> ${mdLite(s.warn)}</p>`;
+        if (s.rule) h += `<p class="bnote r"><b>규칙</b> ${mdLite(s.rule)}</p>`;
+        if (s.tip) h += `<p class="bnote t"><b>요령</b> ${mdLite(s.tip)}</p>`;
+        h += '<div class="bs-f">';
+        if (s.pick) h += '<button class="btn sm pri" type="button" data-act="go" data-tab="combo">조합 탭으로</button>';
+        else h += `<label class="donebox"><input type="checkbox" data-act="buildDone" data-id="${esc(s.id)}" ${isDone ? 'checked' : ''}> 다 했어요</label>`;
+        h += `<span class="grow"></span><button class="btn sm" type="button" data-act="buildPrev">이전</button><button class="btn sm pri" type="button" data-act="buildNext">다음</button></div></div>`;
+      }
+      h += '</div>';
+    }
+    h += '</div></section>';
+  }
+  h += `<section class="sec"><p class="hint">규칙은 VEX IQ 대회 2026-27 Level Up 매뉴얼의 R 규칙 기준이에요. 매뉴얼이 바뀔 수 있으니 대회 전에 한 번 더 확인하세요.</p>
+    ${open ? '<button class="btn sm" type="button" data-act="buildAll">단계 닫고 전체 보기</button>' : ''}</section>`;
+  return h;
 }
 
 /* =========================================================

@@ -17,8 +17,10 @@ function visCls(p) {
 function partClass(p, ctx) {
   let c = 'pt ' + visCls(p);
   if (ctx.sel && partInUnit(p, ctx.sel)) c += ' sel';
-  else if (ctx.bad.has(p.key)) c += ' bad';
+  else if (ctx.focus && ctx.focus.has(p.key)) c += ' focus';
+  else if (!ctx.focus && ctx.bad.has(p.key)) c += ' bad';
   else if (ctx.peer.has(p.key)) c += ' peer';
+  if (ctx.focus && !ctx.focus.has(p.key)) c += ' dim';
   return c;
 }
 function allBB(R) {
@@ -30,7 +32,7 @@ function render2D() {
   if (!CUR.robot || els.pane2d.offsetParent === null) return;
   const R = CUR.robot, A = CUR.an, bb = allBB(R);
   const peerMap = new Map(peerSelections().map(x => [x.key, x.color]));
-  const ctx = { sel: selUnit(), bad: A.bad, peer: peerMap };
+  const ctx = { sel: selUnit(), bad: A.bad, peer: peerMap, focus: S.buildFocus ? new Set(S.buildFocus) : null };
   const fs = 1.15;
   drawTop(R, A, bb, ctx, fs);
   drawSide(R, A, bb, ctx, fs);

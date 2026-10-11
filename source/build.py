@@ -4,7 +4,7 @@ import base64, pathlib
 
 ROOT = pathlib.Path(__file__).parent
 SRC = ROOT / "src"
-JS = ["data.js", "model.js", "analysis.js", "view3d.js", "view2d.js", "store.js", "backend_claude.js", "ui.js", "main.js"]
+JS = ["data.js", "model.js", "analysis.js", "view3d.js", "view2d.js", "store.js", "backend_claude.js", "ui.js", "guide.js", "main.js"]
 
 def data_uri(p):
     return "data:image/jpeg;base64," + base64.b64encode((ROOT / "assets" / p).read_bytes()).decode()
