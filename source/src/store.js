@@ -17,7 +17,7 @@ const CUR = { robot: null, an: null };
 const PREF_KEY = 'vexiq-design-prefs-v1', LOCAL_KEY = 'vexiq-design-local-v1';
 
 function loadPrefs() {
-  const def = { explain: true, view: null, sv: 'top', step: 1, startBox: false, big: false, lastDesign: null, buildDone: {} };
+  const def = { explain: true, view: null, sv: 'top', step: 1, startBox: false, big: false, lastDesign: null, buildDone: {}, buildTime: {}, buildSpeed: 'normal' };
   try { const v = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); return Object.assign(def, v || {}); } catch (e) { return def; }
 }
 function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify(S.prefs)); } catch (e) {} }

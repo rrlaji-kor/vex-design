@@ -1,6 +1,6 @@
 /* 오프라인 캐시: 앱 화면과 도구 파일을 저장해 두고, 인터넷이 없을 때도 열리게 한다.
    Firebase·구글 로그인 요청은 건드리지 않는다. */
-const VERSION = '3ec9d65c03';
+const VERSION = 'c33cb43b7f';
 const CORE = 'core-' + VERSION;
 const FILES = ["./", "./index.html", "./config.js", "./seed.js", "./manifest.webmanifest", "./vendor/three.min.js", "./icons/apple-touch-icon.png", "./icons/favicon-32.png", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/maskable-512.png"];
 self.addEventListener('install', e => {

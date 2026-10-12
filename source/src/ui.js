@@ -595,6 +595,7 @@ function onPanelClick(e) {
     case 'buildStep': openBuildStep(b.dataset.id, false); break;
     case 'buildNext': stepBuild(1); break;
     case 'buildPrev': stepBuild(-1); break;
+    case 'buildSpeed': setBuildSpeed(b.dataset.v); break;
     case 'buildAll': S.ui.buildOpen = null; applyBuildFocus(); render2D(); update3D(); renderPanel(); viewAll(); break;
     case 'shareDesign': shareDesign(b.dataset.id); break;
     case 'pasteImport': pasteImport(); break;
@@ -638,6 +639,8 @@ function onPanelChange(e) {
     const L = d.opts.launch;
     const nm = k === 'bands' ? '고무줄' : L === 'catapult' ? '발사 각도' : '레일 각도', u = k === 'bands' ? '개' : '°';
     commit({ opts: { [k]: v } }, { ckey: 'opt:' + k, from: old, to: v, labelFn: (a, b) => `${nm} ${a}${u} → ${b}${u}` });
+  } else if (t.matches('input[data-act="buildTime"]')) {
+    setBuildTime(t.dataset.id, t.value);
   } else if (t.matches('input[type=checkbox][data-act="buildDone"]')) {
     setBuildDone(t.dataset.id, t.checked);
   } else if (t.matches('input[type=checkbox][data-act="cmpPick"]')) {
@@ -652,6 +655,7 @@ function onPanelKey(e) {
   if (e.key === 'Escape' && e.target.id && e.target.id.startsWith('rn-')) { S.ui.renaming = null; renderPanel(); }
   if (e.key === 'Enter' && e.target.id === 'nickIn') { e.preventDefault(); saveNick(); }
   if (e.key === 'Enter' && e.target.id === 'pasteIn') { e.preventDefault(); pasteImport(); }
+  if (e.key === 'Enter' && e.target.matches && e.target.matches('input[data-act="buildTime"]')) { e.preventDefault(); e.target.blur(); }
 }
 
 /* ---------- 나란히 비교 ---------- */

@@ -19,6 +19,45 @@ function beamName(n) {
 const beamEn = n => beamName(n).replace(' 빔', ' Beam');
 const pt = (n, q, en) => ({ n, q, en: en || '' });
 const MOTOR_KINDS = ['motor', 'launchMotor', 'liftMotor', 'intakeMotor', 'cMotor'];
+/* 예상 시간(분): VEX IQ를 어느 정도 해 본 아이 + 돕는 어른 한 명 기준 어림 */
+const EST = {
+  prep: [20, 30], drive: [10, 15],
+  'brain-side': [15, 25], 'brain-back': [15, 25], 'brain-top': [20, 30],
+  'roller-arm': [15, 20], 'roller-bar': [20, 30], 'roller-motor': [15, 20], 'roller-test': [15, 30],
+  'claw-base': [15, 20], 'claw-finger': [30, 40], 'claw-motor': [10, 15], 'claw-test': [15, 20],
+  'conv-guide': [25, 35], 'conv-belt': [45, 60], 'conv-motor': [15, 20], 'conv-test': [20, 30],
+  'sl-base': [15, 20], 'sl-rail': [30, 45], 'sl-post': [20, 30], 'sl-pocket': [20, 30], 'sl-band': [10, 15],
+  'sl-winch': [100, 160], 'sl-rack': [100, 160], 'sl-cam': [30, 45], 'sl-test': [30, 60],
+  'ca-base': [15, 20], 'ca-pivot': [20, 30], 'ca-arm': [30, 40], 'ca-stop': [20, 30], 'ca-band': [10, 15], 'ca-cam': [30, 45], 'ca-test': [30, 60],
+  'li-tower': [30, 45], 'li-carriage': [30, 45], 'li-motor': [45, 60], 'li-test': [30, 45],
+  wire: [20, 30],
+};
+const SPEEDS = [['first', '처음', 1.6], ['normal', '보통', 1], ['skilled', '익숙함', 0.6], ['mine', '우리 기록', null]];
+function buildRecords() {   // 모든 구상안에서 적어 둔 실제 시간 ÷ 예상 시간
+  const out = [];
+  for (const m of Object.values(S.prefs.buildTime || {})) for (const r of Object.values(m || {})) if (r && r.m > 0 && r.e > 0) out.push(r.m / r.e);
+  return out.sort((a, b) => a - b);
+}
+function speedFactor() {
+  const sp = S.prefs.buildSpeed || 'normal';
+  if (sp === 'mine') {
+    const r = buildRecords();
+    if (!r.length) return 1;
+    const med = r.length % 2 ? r[(r.length - 1) / 2] : (r[r.length / 2 - 1] + r[r.length / 2]) / 2;
+    return clamp(med, 0.3, 3);
+  }
+  const s = SPEEDS.find(x => x[0] === sp);
+  return s && s[2] ? s[2] : 1;
+}
+const r5 = n => Math.max(5, Math.round(n / 5) * 5);
+const hHalf = n => Math.max(0.5, Math.round(n / 30) / 2);
+function fmtDur(lo, hi) {
+  lo = r5(lo); hi = Math.max(lo, r5(hi));
+  if (hi < 60) return lo === hi ? `${lo}분` : `${lo}~${hi}분`;
+  if (lo < 60) return `${lo}분~${hHalf(hi)}시간`;
+  const a = hHalf(lo), b = hHalf(hi);
+  return a === b ? `${a}시간` : `${a}~${b}시간`;
+}
 const RULE_BAND = '고무줄은 VEX IQ 실리콘 고무줄이나, 길이 7.5인치·폭 0.25인치 이하 고무줄만 쓸 수 있어요(R14).';
 const RULE_MOD = '부품을 자르거나 깎거나 붙이면 안 돼요. 금속 축 자르기, 고무줄·로프 매듭은 괜찮아요(R17).';
 
@@ -254,6 +293,11 @@ function buildGuide(design, R) {
     rule: '케이블 타이는 쓸 수 없고, 테이프는 모터·브레인 이름표로만 돼요(R12·R14).',
     tip: '다 만들면 사진을 찍어 두세요. 나중에 진단 탭에서 쓸 수 있어요.' });
   G.push({ id: 'g-fin', title: '마무리', steps: fin });
+  for (const g of G) for (const s of g.steps) {
+    s.est = s.pick ? [0, 0] : s.id === 'custom' ? [10 * Math.min(custom.length, 12), 20 * Math.min(custom.length, 12)] : (EST[s.id] || [10, 20]);
+    if (s.id === 'sl-winch' || s.id === 'sl-rack') s.timeNote = '걸쇠를 풀 장치를 궁리하는 시간(1~2시간)까지 넣은 값이에요.';
+    if (/-test$/.test(s.id)) s.timeNote = '시험과 조정은 팀마다 가장 크게 달라요. 넉넉히 잡으세요.';
+  }
   return G;
 }
 
@@ -293,6 +337,20 @@ function setBuildDone(id, v) {
   if (v) m[id] = Date.now(); else delete m[id];
   savePrefs(); renderPanel();
 }
+function setBuildTime(id, val) {
+  const st = guideState(); if (!st) return;
+  const s = st.flat.find(x => x.id === id); if (!s || s.pick) return;
+  const all = S.prefs.buildTime || (S.prefs.buildTime = {});
+  const m = all[S.curId] || (all[S.curId] = {});
+  const v = Math.round(Number(val));
+  if (val === '' || val == null || !isFinite(v) || v <= 0) delete m[id];
+  else m[id] = { m: Math.min(v, 1440), e: (s.est[0] + s.est[1]) / 2, ts: Date.now() };
+  savePrefs(); renderPanel();
+}
+function setBuildSpeed(v) {
+  if (v === 'mine' && !buildRecords().length) return toast('단계에 걸린 시간을 하나 이상 적으면 켜져요');
+  S.prefs.buildSpeed = v; savePrefs(); renderPanel();
+}
 function viewAll() {
   if (typeof fitCam !== 'function' || !V3.ok) return;
   const f = fitCam(false);
@@ -316,10 +374,20 @@ function htmlBuild() {
   const { G, flat, done, open } = st;
   const real = flat.filter(s => !s.pick), nDone = real.filter(s => done[s.id]).length;
   const pct = real.length ? Math.round(nDone / real.length * 100) : 0;
-  const d = curDesign();
+  const nRec = buildRecords().length, recs = (S.prefs.buildTime || {})[S.curId] || {};
+  const d = curDesign(), f = speedFactor(), sp = S.prefs.buildSpeed === 'mine' && !nRec ? 'normal' : (S.prefs.buildSpeed || 'normal');
+  const sumEst = list => list.reduce((a, s) => [a[0] + s.est[0] * f, a[1] + s.est[1] * f], [0, 0]);
+  const left = sumEst(real.filter(s => !done[s.id])), all = sumEst(real);
+  const ses = [Math.max(1, Math.ceil(left[0] / 120)), Math.max(1, Math.ceil(left[1] / 120))];
+  const tline = !real.length ? '' : nDone === real.length ? '<b>다 만들었어요.</b> 시험해 보고 고칠 곳을 찾아보세요.'
+    : `<b>남은 시간 약 ${fmtDur(left[0], left[1])}</b> · 2시간씩 ${ses[0] === ses[1] ? ses[0] : `${ses[0]}~${ses[1]}`}번${nDone ? ` <span class="muted">(전체 약 ${fmtDur(all[0], all[1])})</span>` : ''}`;
   let h = `<section class="sec"><div class="sec-h"><h3>만드는 법</h3><span class="aside">${nDone}/${real.length} 단계</span></div>
     <p class="hint">${esc(designSummary(d))}</p>
     <div class="prog" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+    ${tline ? `<p class="tline">${tline}</p>` : ''}
+    <div class="speed"><span>우리 팀 속도</span><span class="seg">${SPEEDS.map(([k, l]) => `<button type="button" data-act="buildSpeed" data-v="${k}" class="${k === sp ? 'on' : ''}" aria-pressed="${k === sp}"${k === 'mine' && !nRec ? ' aria-disabled="true" title="단계에 걸린 시간을 적으면 켜져요"' : ''}>${l}</button>`).join('')}</span>
+      ${sp === 'mine' && nRec ? `<span class="muted">기록 ${nRec}개 · 예상의 ${Math.round(f * 100)}%</span>` : ''}</div>
+    <p class="hint ex-only">시간은 VEX IQ를 어느 정도 해 본 아이와 돕는 어른 한 명 기준 어림이에요. 처음이면 "처음", 손에 익었으면 "익숙함"을 고르세요. 단계마다 실제 걸린 시간을 적으면 "우리 기록"으로 우리 팀에 맞춰져요.</p>
     <p class="hint ex-only">고른 옵션대로 만드는 순서예요. 단계를 누르면 3D와 도면에서 그 부분이 초록색으로 보여요. 칸 수와 개수는 이 구상안 크기로 어림한 값이라, 실제 부품을 대 보며 맞춰요.</p></section>`;
   h += `<section class="sec hero"><div class="sec-h"><h3>처음이라면: 공식 로봇 Flop</h3></div>
     <p class="hint">VEX가 이번 시즌(Level Up)용으로 낸 로봇이에요. 인테이커로 빈백을 잡고 팔로 들어 올려요. 3D 설명서를 따라 한 번 만들어 보면 부품이 어떻게 이어지는지 익힐 수 있어요.</p>
@@ -329,13 +397,14 @@ function htmlBuild() {
     `<li><span class="q">${esc(p.q)}</span><span>${esc(p.n)}${p.en ? ` <small>${esc(p.en)}</small>` : ''}</span></li>`).join('')}</ul></details></section>`;
   let no = 0;
   for (const g of G) {
-    h += `<section class="sec"><div class="sec-h"><h3>${esc(g.title)}</h3></div><div class="blist">`;
+    const gt = sumEst(g.steps.filter(s => !s.pick));
+    h += `<section class="sec"><div class="sec-h"><h3>${esc(g.title)}</h3>${gt[1] > 0 ? `<span class="aside">약 ${fmtDur(gt[0], gt[1])}</span>` : ''}</div><div class="blist">`;
     for (const s of g.steps) {
       const isOpen = open && open.id === s.id, isDone = !!done[s.id];
       if (!s.pick) no++;
       h += `<div class="bstep${isOpen ? ' open' : ''}${isDone ? ' done' : ''}${s.pick ? ' pick' : ''}" data-id="${esc(s.id)}">
         <button class="bs-h" type="button" data-act="buildStep" data-id="${esc(s.id)}" aria-expanded="${!!isOpen}">
-          <span class="no">${s.pick ? '?' : isDone ? '✓' : no}</span><span class="tt">${esc(s.title)}</span>${s.keys.length ? '<span class="eye" aria-hidden="true">보기</span>' : ''}</button>`;
+          <span class="no">${s.pick ? '?' : isDone ? '✓' : no}</span><span class="tt">${esc(s.title)}${s.pick ? '' : `<small class="tm">약 ${fmtDur(s.est[0] * f, s.est[1] * f)}${recs[s.id] ? ` · 실제 ${recs[s.id].m}분` : ''}</small>`}</span>${s.keys.length ? '<span class="eye" aria-hidden="true">보기</span>' : ''}</button>`;
       if (isOpen) {
         h += '<div class="bs-b">';
         if (s.parts.length) h += `<div class="chips">${s.parts.map(p => `<span class="pchip" title="${esc(p.en)}"><b>${esc(p.q)}</b> ${esc(p.n)}</span>`).join('')}</div>`;
@@ -346,7 +415,10 @@ function htmlBuild() {
         h += '<div class="bs-f">';
         if (s.pick) h += '<button class="btn sm pri" type="button" data-act="go" data-tab="combo">조합 탭으로</button>';
         else h += `<label class="donebox"><input type="checkbox" data-act="buildDone" data-id="${esc(s.id)}" ${isDone ? 'checked' : ''}> 다 했어요</label>`;
-        h += `<span class="grow"></span><button class="btn sm" type="button" data-act="buildPrev">이전</button><button class="btn sm pri" type="button" data-act="buildNext">다음</button></div></div>`;
+        h += `<span class="grow"></span><button class="btn sm" type="button" data-act="buildPrev">이전</button><button class="btn sm pri" type="button" data-act="buildNext">다음</button></div>`;
+        if (!s.pick) h += `<div class="trec"><label for="bt-${esc(s.id)}">걸린 시간</label><input type="number" id="bt-${esc(s.id)}" inputmode="numeric" min="1" max="1440" step="5" data-act="buildTime" data-id="${esc(s.id)}" value="${recs[s.id] ? recs[s.id].m : ''}" placeholder="${Math.round((s.est[0] + s.est[1]) / 2)}" aria-label="이 단계에 실제로 걸린 시간(분)"><span>분</span>
+          <span class="hint">예상 약 ${fmtDur(s.est[0] * f, s.est[1] * f)}.${s.timeNote ? ' ' + esc(s.timeNote) : ''} 실제 시간을 적어 두면 "우리 기록" 속도에 쓰여요.</span></div>`;
+        h += '</div>';
       }
       h += '</div>';
     }
